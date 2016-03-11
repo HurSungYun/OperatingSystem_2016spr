@@ -1,14 +1,16 @@
 /* headers considered to be necessary
  * 1. prinfo.h; definition of prinfo
  * 2. sched.h; definition of task_struct
- * 3. errno.h; definition of errors
+ * 3. errno.h; definition of errors -> not so sure about this
  * 4. list.h; definition of linked list and its macros
+ * 5. uaccess.h; definition of access_ok
  * add additional headers if judged to be necessary
  */
 #include <linux/prinfo.h>
 #include <linux/sched.h>
-#include <linux/errno.h>
+#include <asm/errno.h>
 #include <linux/list.h>
+#include <asm/uaccess.h>
 
 //function prototype
 int ptree(struct prinfo *buf, int *nr);
@@ -21,14 +23,25 @@ static struct prinfo task_to_info(struct task_struct *t);
  * error handling
  * setting pid to 0 when no parent || no children || no next sibling
  * make ptree return number of successes
+ * system call number (384) assignment
  */
 
 
 
 int ptree(struct prinfo *buf, int *nr) {
+  //checking the basic error conditions
+  if (buf == NULL || nr == NULL || *nr < 1) return -EINVAL;
+  if (!access_ok (VERIFY_WRITE, nr, sizeof(int) || !access_ok (VERIFY_WRITE, buf, sizeof(prinfo) * (*nr)))
+      return -EFAULT;
+  
   int size = *nr;
   *nr = 0;
+
+  read_lock(&tasklist_lock);
+
   DFS(&init_task, buf, size, nr);
+
+  read_unlock(&tasklist_lock);
 }
 
 static void DFS(struct task_struct *t, struct prinfo *buf, int size, int *nr) {
@@ -66,6 +79,3 @@ static struct prinfo task_to_info(struct task_struct *t) {
 
   return ret;
 }
-
-
-
