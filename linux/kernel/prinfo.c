@@ -1,7 +1,7 @@
 /* headers considered to be necessary
  * 1. prinfo.h; definition of prinfo
  * 2. sched.h; definition of task_struct
- * 3. errno.h; definition of errors -> not so sure about this
+ * 3. errno.h; definition of errors -> not so sure about this -> it is in uapi/asm folder
  * 4. list.h; definition of linked list and its macros
  * 5. uaccess.h; definition of access_ok
  * add additional headers if judged to be necessary
@@ -9,7 +9,7 @@
 
 #include <linux/prinfo.h>
 #include <linux/sched.h>
-#include <asm/errno.h>
+#include <uapi/asm/errno.h>
 #include <linux/list.h>
 #include <asm/uaccess.h>
 
