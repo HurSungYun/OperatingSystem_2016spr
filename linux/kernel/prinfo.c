@@ -4,17 +4,22 @@
  * 3. errno.h; definition of errors -> not so sure about this -> it is in uapi/asm folder
  * 4. list.h; definition of linked list and its macros
  * 5. uaccess.h; definition of access_ok
+ * 6. linkage.h; definition of asmlinkage
+ * 7. types.h; definition of pid_t
  * add additional headers if judged to be necessary
  */
 
 #include <linux/prinfo.h>
 #include <linux/sched.h>
-#include <uapi/asm/errno.h>
+#include <asm/errno.h>
 #include <linux/list.h>
-#include <asm/uaccess.h>
+#include <asm-generic/uaccess.h>
+#include <linux/linkage.h>
+#include <asm/unistd.h>
+#include <sys/types.h>
 
 //function prototype
-int ptree(struct prinfo *buf, int *nr);
+static int count_task();
 static void DFS(struct task_struct *t, struct prinfo *buf, int size, int *nr);
 static struct prinfo task_to_info(struct task_struct *t);
 
@@ -25,10 +30,10 @@ static struct prinfo task_to_info(struct task_struct *t);
  * system call number (384) assignment
  */
 
-int ptree(struct prinfo *buf, int *nr) {
+asmlinkage int sys_ptree(struct prinfo *buf, int *nr) {
   //checking the basic error conditions
   if (buf == NULL || nr == NULL || *nr < 1) return -EINVAL;
-  if (!access_ok (VERIFY_WRITE, nr, sizeof(int) || !access_ok (VERIFY_WRITE, buf, sizeof(prinfo) * (*nr)))
+  if (!access_ok (VERIFY_WRITE, nr, sizeof(int)) || !access_ok (VERIFY_WRITE, buf, sizeof(prinfo) * (*nr)))
       return -EFAULT;
   
   int size = *nr;
@@ -39,7 +44,18 @@ int ptree(struct prinfo *buf, int *nr) {
   DFS(&init_task, buf, size, nr, &init_task->sibling);
 
   read_unlock(&tasklist_lock);
+
+  return count_task();
 }
+
+static int count_task() {
+  //count the total number of processes
+  int ret = 0;
+  struct task_struct *p;
+  for_each_process (p) ret += 1;
+  return ret;
+}
+
 
 /* sibling_head added to the argument of DFS
  * in order to convey the information of first sibling when converting struct task_struct to struct prinfo

@@ -393,6 +393,11 @@
 		CALL(sys_ni_syscall)		/* reserved sys_sched_getattr */
 		CALL(sys_ni_syscall)		/* reserved sys_renameat2     */
 		CALL(sys_seccomp)
+
+/* 384 */ CALL(sys_ni_syscall)
+		CALL(sys_ni_syscall)		/* reserved sys_sched_getattr */
+		CALL(sys_ni_syscall)		/* reserved sys_renameat2     */
+    CALL(sys_ptree)
 /* it's the place we should add our new syscall. I'm not sure whether Tizen Z3 is arm64 or not. If so, plz move this line to arm64 folder instead */  
 
 #ifndef syscalls_counted
