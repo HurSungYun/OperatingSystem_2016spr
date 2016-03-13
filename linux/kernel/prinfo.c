@@ -22,20 +22,23 @@
 /* TODO:
  * error handling
  */
-static struct prinfo task_to_info(struct task_struct *t, struct task_struct *sibling_head) {
+static struct prinfo task_to_info(struct task_struct *t, struct list_head sibling_head) {
   //change type task_struct into type prinfo 
   struct prinfo ret;
   struct task_struct *first_child = 
-    (t->children->next == t->children) ? NULL :
-    list_entry (t->children->next, struct task_struct, sibling);
+    (t->children.next == &t->children) ? NULL :
+    list_entry (t->children.next, struct task_struct, sibling);
+  struct task_struct *next_sibling =
+    (t->sibling.next == &sibling_head) ? NULL :
+    list_entry (t->sibling.next, struct task_struct, sibling);
  
   ret.state = t->state;
   ret.pid = t->pid;
   ret.parent_pid = (t->real_parent == t) ? 0 : t->real_parent->pid;
   ret.first_child_pid = (first_child == NULL) ? 0 : first_child->pid;
-  ret.next_sibling_pid = (t->sibling->next == sibling_head) ? 0 : t->sibling->next->pid;
+  ret.next_sibling_pid = (next_sibling == NULL) ? 0 : next_sibling->pid;
   ret.uid = t->real_cred->uid;
-  ret.comm = t->comm;
+  get_task_comm(ret.comm, t); 
 
   return ret;
 }
@@ -43,7 +46,7 @@ static struct prinfo task_to_info(struct task_struct *t, struct task_struct *sib
 /* sibling_head added to the argument of DFS
  * in order to convey the information of first sibling when converting struct task_struct to struct prinfo
  */
-static void DFS(struct task_struct *t, struct prinfo *buf, int size, int *nr, struct task_struct *sibling_head) {
+static void DFS(struct task_struct *t, struct prinfo *buf, int size, int *nr, struct list_head sibling_head) {
   //if buffer is full return with the current buffer
   if (size == *nr) return;
 
@@ -56,7 +59,7 @@ static void DFS(struct task_struct *t, struct prinfo *buf, int size, int *nr, st
   //run DFS recursively using list macros 
   struct task_struct *child;
   struct list_head *list;
-  list_for_each (list, t->children) {
+  list_for_each (list, &t->children) {
     child = list_entry (list, struct task_struct, sibling);
     DFS(child, buf, size, nr, t->children);
   }
@@ -73,7 +76,7 @@ static int count_task() {
 asmlinkage int sys_ptree(struct prinfo *buf, int *nr) {
   //checking the basic error conditions
   if (buf == NULL || nr == NULL || *nr < 1) return -EINVAL;
-  if (!access_ok (VERIFY_WRITE, nr, sizeof(int)) || !access_ok (VERIFY_WRITE, buf, sizeof(prinfo) * (*nr)))
+  if (!access_ok (VERIFY_WRITE, nr, sizeof(int)) || !access_ok (VERIFY_WRITE, buf, sizeof(struct prinfo) * (*nr)))
       return -EFAULT;
   
   int size = *nr;
@@ -81,7 +84,7 @@ asmlinkage int sys_ptree(struct prinfo *buf, int *nr) {
 
   read_lock(&tasklist_lock);
 
-  DFS(&init_task, buf, size, nr, &init_task->sibling);
+  DFS(&init_task, buf, size, nr, init_task.sibling);
 
   read_unlock(&tasklist_lock);
 
