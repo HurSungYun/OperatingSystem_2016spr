@@ -500,6 +500,11 @@ __SYSCALL(__NR_gettid, sys_gettid)
 #define __NR_sysinfo 179
 __SC_COMP(__NR_sysinfo, sys_sysinfo, compat_sys_sysinfo)
 
+
+/*kernel/prinfo.c*/
+#define __NR_ptree 384
+__SYSCALL(__NR_ptree, sys_ptree)
+
 /* ipc/mqueue.c */
 #define __NR_mq_open 180
 __SC_COMP(__NR_mq_open, sys_mq_open, compat_sys_mq_open)
@@ -705,6 +710,8 @@ __SYSCALL(__NR_seccomp, sys_seccomp)
 
 #undef __NR_syscalls
 #define __NR_syscalls 278
+
+
 
 /*
  * All syscalls below here should go away really,
