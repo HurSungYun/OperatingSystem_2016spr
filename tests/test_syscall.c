@@ -1,7 +1,10 @@
 #include<stdio.h>
 #include<linux/unisted.h>
 
-void main()
+int main()
 {
- syscall(__NR_ptree);
+ printf("Syscall started\n");
+ printf("%d\n",syscall(__NR_ptree));
+ printf("Syscall ended\n");
+ return 0;
 }
