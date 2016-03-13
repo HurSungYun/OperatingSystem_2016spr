@@ -74,11 +74,15 @@ static int count_task() {
 }
 
 asmlinkage int sys_ptree(struct prinfo *buf, int *nr) {
+  //printk("sys_ptree is processing..\n");
+
   //checking the basic error conditions
   if (buf == NULL || nr == NULL || *nr < 1) return -EINVAL;
   if (!access_ok (VERIFY_WRITE, nr, sizeof(int)) || !access_ok (VERIFY_WRITE, buf, sizeof(struct prinfo) * (*nr)))
       return -EFAULT;
-  
+ 
+  //printk("Error checking is completed\n");
+ 
   int size = *nr;
   *nr = 0;
 
