@@ -89,10 +89,11 @@ asmlinkage int sys_ptree(struct prinfo *buf, int *nr) {
   read_lock(&tasklist_lock);
 
   DFS(&init_task, buf, size, nr, init_task.sibling);
+  int ret = count_task();
 
   read_unlock(&tasklist_lock);
 
-  return count_task();
+  return ret;
 }
 
 
