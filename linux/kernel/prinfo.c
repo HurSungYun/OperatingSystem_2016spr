@@ -22,14 +22,14 @@
 /* TODO:
  * error handling
  */
-static struct prinfo task_to_info(struct task_struct *t, struct list_head sibling_head) {
+static struct prinfo task_to_info(struct task_struct *t, struct list_head* sibling_head) {
   //change type task_struct into type prinfo 
   struct prinfo ret;
   struct task_struct *first_child = 
     (t->children.next == &t->children) ? NULL :
     list_entry (t->children.next, struct task_struct, sibling);
   struct task_struct *next_sibling =
-    (t->sibling.next == &sibling_head) ? NULL :
+    (t->sibling.next == sibling_head) ? NULL :
     list_entry (t->sibling.next, struct task_struct, sibling);
  
   ret.state = t->state;
@@ -46,7 +46,7 @@ static struct prinfo task_to_info(struct task_struct *t, struct list_head siblin
 /* sibling_head added to the argument of DFS
  * in order to convey the information of first sibling when converting struct task_struct to struct prinfo
  */
-static void DFS(struct task_struct *t, struct prinfo *buf, int size, int *nr, struct list_head sibling_head) {
+static void DFS(struct task_struct *t, struct prinfo *buf, int size, int *nr, struct list_head *sibling_head) {
   //if buffer is full return with the current buffer
   if (size == *nr) return;
 
@@ -61,7 +61,7 @@ static void DFS(struct task_struct *t, struct prinfo *buf, int size, int *nr, st
   struct list_head *list;
   list_for_each (list, &t->children) {
     child = list_entry (list, struct task_struct, sibling);
-    DFS(child, buf, size, nr, t->children);
+    DFS(child, buf, size, nr, &t->children);
   }
 }
 
@@ -88,7 +88,7 @@ asmlinkage int sys_ptree(struct prinfo *buf, int *nr) {
 
   read_lock(&tasklist_lock);
 
-  DFS(&init_task, buf, size, nr, init_task.sibling);
+  DFS(&init_task, buf, size, nr, &init_task.sibling);
   int ret = count_task();
 
   read_unlock(&tasklist_lock);
