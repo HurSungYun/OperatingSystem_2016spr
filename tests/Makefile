@@ -1,5 +1,5 @@
-INCLUDE=-I/home/hursungyun/Documents/Tizen_kernel/os-team1/linux/include
-GCCROOT=/home/hursungyun/Documents/opt/tizen-toolchain-4.9~git-i686_armv7l-tizen-linux-gnueabi-20151113/bin
+INCLUDE=-I/home/ywkim/OS/workspace/linux/include
+GCCROOT=/home/ywkim/OS/opt/tizen-toolchain-4.9~git-i686_armv7l-tizen-linux-gnueabi-20151113/bin
 CFLAGS=$(INCLUDE)
 CC=$(GCCROOT)/armv7l-tizen-linux-gnueabi-gcc
 

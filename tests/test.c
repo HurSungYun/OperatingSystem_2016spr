@@ -16,6 +16,8 @@ int main()
  struct prinfo *test_buf = (struct prinfo*)malloc(sizeof(struct prinfo)*__MAX__);
  printf("Syscall started\n");
  process = syscall(__NR_ptree, test_buf, &test_nr);
+ printf ("Total number of entries: %d\n", process);
+ //checking the total number of entries before looping through the buffer.
  printf("Syscall is done\nNow Print tasks\n");
  
  int stack[__MAX__][4],stackPointer=0,level=-1;
