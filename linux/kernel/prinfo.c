@@ -17,6 +17,7 @@
 #include <linux/linkage.h>
 #include <asm-generic/unistd.h>
 #include <linux/types.h>
+#include <linux/slab.h>
 
 
 /* TODO:
@@ -77,21 +78,30 @@ asmlinkage int sys_ptree(struct prinfo *buf, int *nr) {
   //printk("sys_ptree is processing..\n");
 
   //checking the basic error conditions
-  if (buf == NULL || nr == NULL || *nr < 1) return -EINVAL;
-  if (!access_ok (VERIFY_WRITE, nr, sizeof(int)) || !access_ok (VERIFY_WRITE, buf, sizeof(struct prinfo) * (*nr)))
-      return -EFAULT;
- 
+  if (buf == NULL || nr == NULL) return -EINVAL;
+  if (!access_ok (VERIFY_WRITE, nr, sizeof(int))) return -EFAULT;
+  int size;
+  get_user (size, nr);
+  if (size < 1) return -EINVAL;
+  if (!access_ok (VERIFY_WRITE, buf, sizeof(struct prinfo) * size)) return -EFAULT;
   //printk("Error checking is completed\n");
  
-  int size = *nr;
-  *nr = 0;
+  //creating temporary pointers for safer user memory access.
+  int *temp_nr;
+  *temp_nr = 0;
+  struct prinfo *temp_buf;
+  temp_buf = (struct prinfo*) kmalloc (sizeof(struct prinfo) * size, GFP_KERNEL);
 
-  read_lock(&tasklist_lock);
+  read_lock (&tasklist_lock);
 
-  DFS(&init_task, buf, size, nr, &init_task.sibling);
+  DFS(&init_task, temp_buf, size, temp_nr, &init_task.sibling);
   int ret = count_task();
 
-  read_unlock(&tasklist_lock);
+  read_unlock (&tasklist_lock);
+
+  put_user (*temp_nr, nr);
+  copy_to_user (buf, temp_buf, sizeof(struct prinfo) * size);
+  kfree (temp_buf);
 
   return ret;
 }
