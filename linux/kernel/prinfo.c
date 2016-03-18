@@ -74,36 +74,29 @@ static int count_task() {
   return ret;
 }
 
-asmlinkage int sys_ptree(struct prinfo *buf, int *nr) {
-  
-
-  printk("sys_ptree is processing..\n");
+asmlinkage int sys_ptree(struct prinfo__user *buf, int__user *nr) {
+//  printk("sys_ptree is processing..\n");
 
   //checking the basic error conditions
   if (buf == NULL || nr == NULL) return -EINVAL;
   if (!access_ok (VERIFY_WRITE, nr, sizeof(int))) return -EFAULT;
   int size;
   get_user (size, nr);
-
-  printk("get_user function is completed. Size : %d\n",size);
+//	printk("get_user function is completed. Size : %d\n",size);
 
   if (size < 1) return -EINVAL;
   if (!access_ok (VERIFY_WRITE, buf, sizeof(struct prinfo) * size)) return -EFAULT;
-  printk("Error checking is completed\n");
+//  printk("Error checking is completed\n");
  
   //creating temporary pointers for safer user memory access.
   int *temp_nr = kmalloc(sizeof(int),GFP_KERNEL);
+  if (temp_nr==NULL) return -EFAULT;	
+	*temp_nr = 0;
+//  printk("Set *temp_nr is completed\n");
 
-  *temp_nr = 0;
-
-  printk("Set *temp_nr is completed\n");
-
-  struct prinfo *temp_buf;
-  temp_buf = kmalloc (sizeof(struct prinfo) * size, GFP_KERNEL);
-
-//    temp_buf = kmalloc (32,GFP_KERNEL);
-
-  if(temp_buf == NULL) printk("kmalloc returns NULL\n");
+  struct prinfo *temp_buf = kmalloc (sizeof(struct prinfo) * size, GFP_KERNEL);
+	if (temp_buf==NULL) return -EFAULT;
+//  if(temp_buf == NULL) printk("kmalloc returns NULL\n");
 
   read_lock (&tasklist_lock);
 
@@ -114,16 +107,16 @@ asmlinkage int sys_ptree(struct prinfo *buf, int *nr) {
 
   put_user (*temp_nr, nr);
 
-  printk("put_user function is completed\n");
+//  printk("put_user function is completed\n");
 
   copy_to_user (buf, temp_buf, sizeof(struct prinfo) * size);
 
-  printk("copy_to_user function is completed\n");
+//  printk("copy_to_user function is completed\n");
 
   kfree (temp_buf);
   kfree (temp_nr);
 
-  printk("kfree is completed\n");
+//  printk("kfree is completed\n");
 
   return ret;
 }
