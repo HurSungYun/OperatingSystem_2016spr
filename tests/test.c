@@ -5,7 +5,7 @@
 #include <linux/types.h>
 
 #define __NR_ptree 384
-#define __MAX__ 75
+#define __MAX__ 300
 
 //TODO: error handling
 

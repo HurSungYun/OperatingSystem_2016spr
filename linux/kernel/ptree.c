@@ -19,10 +19,6 @@
 #include <linux/types.h>
 #include <linux/slab.h>
 
-
-/* TODO:
- * error handling
- */
 static struct prinfo task_to_info(struct task_struct *t, struct list_head* sibling_head) {
   //change type task_struct into type prinfo 
   struct prinfo ret;
@@ -51,6 +47,8 @@ static void DFS(struct task_struct *t, struct prinfo *buf, int size, int *nr, st
   //if buffer is full return with the current buffer
   if (size == *nr) return;
 
+  struct task_struct *child;
+  struct list_head *list;
   //add current task t to the buffer after changing it into struct prinfo
   //increase the number of tasks in the buffer afterwards.
   struct prinfo info = task_to_info(t, sibling_head);
@@ -58,15 +56,13 @@ static void DFS(struct task_struct *t, struct prinfo *buf, int size, int *nr, st
   *nr += 1;
 
   //run DFS recursively using list macros 
-  struct task_struct *child;
-  struct list_head *list;
   list_for_each (list, &t->children) {
     child = list_entry (list, struct task_struct, sibling);
     DFS(child, buf, size, nr, &t->children);
   }
 }
 
-static int count_task() {
+static int count_task(void) {
   //count the total number of processes
   int ret = 0;
   struct task_struct *p;
@@ -74,13 +70,16 @@ static int count_task() {
   return ret;
 }
 
-asmlinkage int sys_ptree(struct prinfo__user *buf, int__user *nr) {
+asmlinkage int sys_ptree(struct prinfo __user *buf, int __user *nr) {
 //  printk("sys_ptree is processing..\n");
+//variables to be used
+	int size, ret;
+	int *temp_nr;
+	struct prinfo *temp_buf;
 
   //checking the basic error conditions
   if (buf == NULL || nr == NULL) return -EINVAL;
   if (!access_ok (VERIFY_WRITE, nr, sizeof(int))) return -EFAULT;
-  int size;
   get_user (size, nr);
 //	printk("get_user function is completed. Size : %d\n",size);
 
@@ -89,34 +88,32 @@ asmlinkage int sys_ptree(struct prinfo__user *buf, int__user *nr) {
 //  printk("Error checking is completed\n");
  
   //creating temporary pointers for safer user memory access.
-  int *temp_nr = kmalloc(sizeof(int),GFP_KERNEL);
-  if (temp_nr==NULL) return -EFAULT;	
+  temp_nr = kmalloc(sizeof(int),GFP_KERNEL);
+  if (temp_nr==NULL) return -EFAULT;	//checking kmalloc error
 	*temp_nr = 0;
 //  printk("Set *temp_nr is completed\n");
 
-  struct prinfo *temp_buf = kmalloc (sizeof(struct prinfo) * size, GFP_KERNEL);
-	if (temp_buf==NULL) return -EFAULT;
+  temp_buf = kmalloc (sizeof(struct prinfo) * size, GFP_KERNEL);
+	if (temp_buf==NULL) return -EFAULT;  //checking kmalloc error
 //  if(temp_buf == NULL) printk("kmalloc returns NULL\n");
 
   read_lock (&tasklist_lock);
 
   DFS(&init_task, temp_buf, size, temp_nr, &init_task.sibling);
-  int ret = count_task();
+  ret = count_task();
 
   read_unlock (&tasklist_lock);
 
   put_user (*temp_nr, nr);
-
 //  printk("put_user function is completed\n");
 
   copy_to_user (buf, temp_buf, sizeof(struct prinfo) * size);
-
 //  printk("copy_to_user function is completed\n");
 
   kfree (temp_buf);
   kfree (temp_nr);
 
-//  printk("kfree is completed\n");
+  printk("kfree is completed\n");
 
   return ret;
 }
