@@ -13,8 +13,8 @@ int main()
  struct prinfo *test_buf = (struct prinfo*)malloc(sizeof(struct prinfo)*__MAX__);
 // printf("Syscall started\n");
  process = syscall(__NR_ptree, test_buf, &test_nr);
- printf ("Total number of entries: %d\n", process);
- //checking the total number of entries before looping through the buffer.
+// printf ("Total number of entries: %d\n", process);
+// checking the total number of entries before looping through the buffer.
 // printf("Syscall is done\nNow Print tasks\n");
  
  int stack[__MAX__][4],stackPointer=0,level=-1;
@@ -25,7 +25,10 @@ int main()
  stack[0][3]=test_buf[0].next_sibling_pid;
  stackPointer++;
 
-	for(i=1;i< ( (process < __MAX__) ? process : __MAX__ ) ;i++)
+
+//    printf("Name : %s, Pid: %d,Parent: %d,F.Child: %d,Next: %d\n",test_buf[0].comm,test_buf[0].pid,test_buf[0].parent_pid,test_buf[0].first_child_pid,test_buf[0].next_sibling_pid);
+
+	for(i=1;i< ( (test_nr < __MAX__) ? test_nr : __MAX__ ) ;i++)
  	{
     if(stack[stackPointer-1][0]==test_buf[i].parent_pid && stack[stackPointer-1][2]==test_buf[i].pid){
       //meet the oldest child
@@ -57,6 +60,8 @@ int main()
        stackPointer--;
      }
  }
+
+ printf("NR %d PROCESS %d\n",test_nr,process);
  
  return 0;
 }
