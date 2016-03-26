@@ -43,25 +43,28 @@ static struct prinfo task_to_info(struct task_struct *t, struct list_head* sibli
 /* sibling_head added to the argument of DFS
  * in order to convey the information of first sibling when converting struct task_struct to struct prinfo
  */
-static void DFS(struct task_struct *t, struct prinfo *buf, int size, int *nr, struct list_head *sibling_head) {
+static void DFS(struct task_struct *t, struct prinfo *buf, int size, int *nr, struct list_head *sibling_head, int *num_of_process) {
   //if buffer is full return with the current buffer
-  if (size == *nr) return;
 
   struct task_struct *child;
   struct list_head *list;
-  //add current task t to the buffer after changing it into struct prinfo
-  //increase the number of tasks in the buffer afterwards.
-  struct prinfo info = task_to_info(t, sibling_head);
-  buf[*nr] = info;
-  *nr += 1;
+  
+  if (size > *nr){
+    //add current task t to the buffer after changing it into struct prinfo
+    //increase the number of tasks in the buffer afterwards.
+    struct prinfo info = task_to_info(t, sibling_head);
+    buf[*nr] = info;
+    *nr += 1;
+  }
+  *num_of_process += 1;
 
   //run DFS recursively using list macros 
   list_for_each (list, &t->children) {
     child = list_entry (list, struct task_struct, sibling);
-    DFS(child, buf, size, nr, &t->children);
+    DFS(child, buf, size, nr, &t->children, num_of_process);
   }
 }
-
+/*
 static int count_task(void) {
   //count the total number of processes
   int ret = 1;
@@ -71,11 +74,11 @@ static int count_task(void) {
 	}
   return ret;
 }
-
+*/
 asmlinkage int sys_ptree(struct prinfo __user *buf, int __user *nr) {
 //  printk("sys_ptree is processing..\n");
 //variables to be used
-	int size, ret;
+	int size, num_of_process;
 	int *temp_nr;
 	struct prinfo *temp_buf;
 
@@ -101,8 +104,8 @@ asmlinkage int sys_ptree(struct prinfo __user *buf, int __user *nr) {
 
   read_lock (&tasklist_lock);
 
-  DFS(&init_task, temp_buf, size, temp_nr, &init_task.sibling);
-  ret = count_task();
+  DFS(&init_task, temp_buf, size, temp_nr, &init_task.sibling, &num_of_process);
+//  ret = count_task();
 
   read_unlock (&tasklist_lock);
 
@@ -115,9 +118,9 @@ asmlinkage int sys_ptree(struct prinfo __user *buf, int __user *nr) {
   kfree (temp_buf);
   kfree (temp_nr);
 
-  printk("kfree is completed\n");
+//  printk("kfree is completed. ret is %d and nr is %d\n",ret, *nr);
 
-  return ret;
+  return num_of_process;
 }
 
 
