@@ -1,0 +1,36 @@
+====
+1. How to build the kernel
+
+Build the revised kernel and push it into your device. Enter the linux/ directory and type
+  ./build.sh tizen_tm1 USR
+  sdb -d root on
+  sdb push system_kernel.tar /opt/storage/sdcard/tizen-recovery.tar
+  sdb shell reboot recovery
+Reboot your device with the kernel.
+
+Afterwards, compile the test code and also push it into your device. Enter the tests/ folder and type
+  make
+  sdb push test /home/developer/
+
+Test our new system call by typing
+  sdb shell /home/developer/test
+
+====
+2. Description of design & implementation
+
+The new system call 'sys_ptree' is defined in linux/kernel/ptree.c.
+The code consists of 4 functions:
+  task_to_info; DFS; count_task; sys_ptree.
+
+'task_to_info' transforms struct task_struct into struct prinfo.
+'DFS' recursively traverses the task tree in preorder starting with init_task. It calls task_to_info and saves struct prinfo into the buffer in preorder.
+'count_task' counts the number of tasks by iterating through the task list. It calculates the return value of 'sys_ptree.'
+'sys_ptree' checks error conditions and calls DFS, count_task to fill in the buffer and return the number of running tasks.
+
+To sum up, when 'sys_ptree' is called from the user space, it calls 'DFS' that traverses the task tree in preorder, transforms the tasks into struct prinfo one by one, and saves them into buffer. Then, it returns the number of tasks by calling 'count_task.'
+
+====
+3. Investigation of the process tree
+
+====
+4. Lessons learned
