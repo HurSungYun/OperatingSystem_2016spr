@@ -46,13 +46,18 @@
 	
 * By executing the task for many times, we found that the systemd-udevd generates a child with the same name periodically. And an extra kworker is created and deleted from time to time.
 
+* We found that systemd-udevd manage devices and events. It communicates between device and kernel. 
+
+* Therefore, its child is created when our test program send a syscall message or other some communication is needed and the process is destroyed when we don't need it.
+
 ## 3.2 Investigation of the process tree launching some applications
 
-* When starting an application, camera application here as an example, 
+* When starting an application, we used camera application as an example, 
 
-  * New camera task appears as a child of launchpad-process. On the occassion of starting a camera application, a new task named camera appears.  
+  * New camera task appears as a child of launchpad-process. On the occassion of starting a camera application, a new task named camera appears. 
 
   * At the tail of the process tree, new kworkers and functional tasks appear newly. In the camera example, 2 kworkers, dcam\_flash_thread, img\_zoom\_thread, ipp\_cmd\_1 appeared newly.
+
 
 ## 3.3 Investigation of the launchpad and launchpad-loader
 
@@ -66,11 +71,15 @@
 
 * The launchpad saves the tasks of applications used in the order that they were started. 
 
-* When the caller app calls the callee app, it sends the request to the launchpad. Then the launchpad checks if the caller app has the right, and launch the callee app if so. 
-
-* If the launchpad decides to launch the callee app, the launchpad-loader launches the callee app with its process which was made beforehand.
-
 * The launchpad remains a snapshot of the app even if it was force stopped so that the application can be launched from where it was stopped.
+
+* They use launchpad-loader for save the that.
+
+* The launchpad also manage tasks.
+
+* When the one app calls another app, it sends the request to the launchpad. 
+
+* If the launchpad decides to launch another app, the launchpad-loader launches the app with its process which was made beforehand.
 
 
 # 4. Lessons learned
