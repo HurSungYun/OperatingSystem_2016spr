@@ -64,9 +64,11 @@ static void DFS(struct task_struct *t, struct prinfo *buf, int size, int *nr, st
 
 static int count_task(void) {
   //count the total number of processes
-  int ret = 0;
+  int ret = 1;
   struct task_struct *p;
-  for_each_process (p) ret += 1;
+  for_each_process (p) {
+		ret += 1;
+	}
   return ret;
 }
 
