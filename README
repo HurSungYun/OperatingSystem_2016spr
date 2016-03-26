@@ -11,6 +11,7 @@ Reboot your device with the kernel.
 Afterwards, compile the test code and also push it into your device. Enter the tests/ folder and type
   make
   sdb push test /home/developer/
+(Don't forget to modify the makefile which is in the same folder. Type vim Makefile)
 
 Test our new system call by typing
   sdb shell /home/developer/test
@@ -32,5 +33,28 @@ To sum up, when 'sys_ptree' is called from the user space, it calls 'DFS' that t
 ====
 3. Investigation of the process tree
 
+3.1 Investigation of the process tree
+	
+	By executing the task for many times, we found that the systemd-udevd generates a child with the same name periodically. And an extra kworker is created and deleted frome time to time.
+
+3.2 Investigation of the process tree launching some applications
+
+When starting an application, camera application here as an example, 
+	-New camera task appears as a child of launchpad-process. On the occassion of starting a camera application, a new task named camera appears.  
+	-At the tail of the process tree, new kworkers and functional tasks appear newly. In the camera example, 2 kworkers, dcam_flash_thread, img_zoom_thread, ipp_cmd_1 appeared newly.
+
+3.3 Investigation of the launchpad and launchpad-loader.
+
+3.3a Experiments
+	Every time a new application is started, one or two related task is appeared as a child of launchpad and it remains when we force stopped the application(press the home button).
+	The tasks under the launchpad disappears when we do the clear all(long press the home button and press the clear all button). 
+
+3.3b Explanation
+	-The launchpad saves the tasks of applications used in the order that they were started. 
+	-When the caller app calls the callee app, it sends the request to the launchpad. Then the launchpad checks if the caller app has the right, and launch the callee app if so. 
+	-If the launchpad decides to launch the callee app, the launchpad-loader launches the callee app with its process which was made beforehand.
+	-The launchpad remains a snapshot of the app even if it was force stopped so that the application can be launched from where it was stopped.
+
 ====
 4. Lessons learned
+	
