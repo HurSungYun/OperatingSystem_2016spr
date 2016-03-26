@@ -64,21 +64,11 @@ static void DFS(struct task_struct *t, struct prinfo *buf, int size, int *nr, st
     DFS(child, buf, size, nr, &t->children, num_of_process);
   }
 }
-/*
-static int count_task(void) {
-  //count the total number of processes
-  int ret = 1;
-  struct task_struct *p;
-  for_each_process (p) {
-		ret += 1;
-	}
-  return ret;
-}
-*/
+
 asmlinkage int sys_ptree(struct prinfo __user *buf, int __user *nr) {
 //  printk("sys_ptree is processing..\n");
 //variables to be used
-	int size, num_of_process;
+	int size, num_of_process=0;
 	int *temp_nr;
 	struct prinfo *temp_buf;
 
