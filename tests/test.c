@@ -4,7 +4,7 @@
 #include <linux/types.h>
 
 #define __NR_ptree 384
-#define __MAX__ 300
+#define __MAX__ 100
 
 int main()
 {
@@ -45,8 +45,8 @@ int main()
 
 		//print the process
     for(j=0;j<level;j++) printf("\t");
-    printf("Name : %s, Pid: %d,Parent: %d,F.Child: %d,Next: %d\n",test_buf[i].comm,test_buf[i].pid,test_buf[i].parent_pid,test_buf[i].first_child_pid,test_buf[i].next_sibling_pid);
-//    printf("%s,%d,%ld,%d,%d,%d,%d\n",test_buf[i].comm,test_buf[i].pid,test_buf[i].state,test_buf[i].parent_pid,test_buf[i].first_child_pid,test_buf[i].next_sibling_pid, test_buf[i].uid);
+//    printf("Name : %s, Pid: %d,Parent: %d,F.Child: %d,Next: %d\n",test_buf[i].comm,test_buf[i].pid,test_buf[i].parent_pid,test_buf[i].first_child_pid,test_buf[i].next_sibling_pid);
+    printf("%s,%d,%ld,%d,%d,%d,%d\n",test_buf[i].comm,test_buf[i].pid,test_buf[i].state,test_buf[i].parent_pid,test_buf[i].first_child_pid,test_buf[i].next_sibling_pid, test_buf[i].uid);
 
    int t[2];
    t[0]=test_buf[i].parent_pid;
@@ -61,7 +61,7 @@ int main()
      }
  }
 
- printf("NR %d PROCESS %d\n",test_nr,process);
+ //printf("NR %d PROCESS %d\n",test_nr,process);
  
  return 0;
 }
