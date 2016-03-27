@@ -44,7 +44,7 @@
 
 # 3. Investigation of the process tree
 
-## 3.1 Investigation of the process tree
+## 3.1 Investigations of the process tree
 	
 * By executing the program several times, we found that the task 'systemd-udevd' generates a child with the same name periodically. Also, kworker is created and deleted from time to time.
 
@@ -52,7 +52,7 @@
 
 * Therefore, its child is created when our test program sends a syscall message and the process is destroyed when we don't need it.
 
-## 3.2 Investigation of the process tree launching some applications
+## 3.2 Investigations of the process tree launching some applications
 
 * When starting an application, we used camera application as an example, 
 
@@ -61,15 +61,15 @@
   * At the tail of the process tree, new kworkers and functional tasks appear. In the camera example, 2 kworkers, dcam\_flash\_thread, img\_zoom\_thread, ipp\_cmd\_1 appeared. 
 
 
-## 3.3 Investigation of the launchpad and launchpad-loader
+## 3.3 Investigations of the launchpad and launchpad-loader
 
 ### 3.3a Experiments
 
- * Every time a new application is started, one or two related task appears as a child of launchpad and it remains even if we stopped the application by pressing the home button.
+ * Every time a new application is started, one or two related tasks appear as children of launchpad and they remain even if we stopped the application by pressing the home button.
 
- * The tasks under the launchpad disappears when we do the clear all(long press the home button and press the clear all button). 
+ * The tasks under the launchpad disappear when we do the clear all(long press the home button and press the clear all button). 
 
-### 3.3b Explanation
+### 3.3b Explanations
 
 * The launchpad saves the tasks of applications used in the order that they were started. 
 
@@ -88,4 +88,4 @@
 
 * YEONWOOKIM (2014-17184): By creating a new custom-made system call, we concretely understood the process of how system call operates in both user and kernel spaces.
 
-* HURSUNGYUN (2013-
+* EUNHYANGKIM (2013-13494): Besides how system call works through the user and kernel space, we also learned about functions of some specific kernel tasks.
