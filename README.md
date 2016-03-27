@@ -36,7 +36,7 @@
 
  + 'DFS' recursively traverses the task tree in preorder starting with init\_task. It calls task\_to\_info and saves struct prinfo into the buffer in preorder. In addition, the number of tasks are counted in this function.
 
- + 'sys\_ptree' checks error conditions and calls DFS, count\_task to fill in the buffer and return the number of running tasks.
+ + 'sys\_ptree' checks error conditions and calls DFS to fill in the buffer and return the number of running tasks.
 
 * To sum up, when 'sys\_ptree' is called from the user space, it calls 'DFS' that traverses the task tree in preorder, transforms the tasks into struct prinfo one by one, and saves them into buffer. Then, it returns the number of tasks that was counted when 'DFS' is running.
 
@@ -44,11 +44,11 @@
 
 ## 3.1 Investigation of the process tree
 	
-* By executing the task for many times, we found that the systemd-udevd generates a child with the same name periodically. And an extra kworker is created and deleted from time to time.
+* By executing the program several times, we found that the task 'systemd-udevd' generates a child with the same name periodically. Also, kworker is created and deleted from time to time.
 
-* We found that systemd-udevd manage devices and events. It communicates between device and kernel. 
+* We found that systemd-udevd manages the device and events. It communicates between the device and the kernel. 
 
-* Therefore, its child is created when our test program send a syscall message or other some communication is needed and the process is destroyed when we don't need it.
+* Therefore, its child is created when our test program sends a syscall message and the process is destroyed when we don't need it.
 
 ## 3.2 Investigation of the process tree launching some applications
 
@@ -56,14 +56,14 @@
 
   * New camera task appears as a child of launchpad-process. On the occassion of starting a camera application, a new task named camera appears. 
 
-  * At the tail of the process tree, new kworkers and functional tasks appear newly. In the camera example, 2 kworkers, dcam\_flash_thread, img\_zoom\_thread, ipp\_cmd\_1 appeared newly.
+  * At the tail of the process tree, new kworkers and functional tasks appear. In the camera example, 2 kworkers, dcam\_flash_thread, img\_zoom\_thread, ipp\_cmd\_1 appeared.
 
 
 ## 3.3 Investigation of the launchpad and launchpad-loader
 
 ### 3.3a Experiments
 
- * Every time a new application is started, one or two related task is appeared as a child of launchpad and it remains when we force stopped the application(press the home button).
+ * Every time a new application is started, one or two related task appears as a child of launchpad and it remains even if we stopped the application by pressing the home button.
 
  * The tasks under the launchpad disappears when we do the clear all(long press the home button and press the clear all button). 
 
@@ -71,9 +71,9 @@
 
 * The launchpad saves the tasks of applications used in the order that they were started. 
 
-* The launchpad remains a snapshot of the app even if it was force stopped so that the application can be launched from where it was stopped.
+* The launchpad saves a snapshot of the app even if it was force stopped so that the application can be launched from where it was stopped.
 
-* They use launchpad-loader for save the that.
+* They use launchpad-loader to save the snapshot.
 
 * The launchpad also manage tasks.
 
@@ -84,8 +84,8 @@
 
 # 4. Lessons learned
 
-* HURSUNGYUN (2014-19768) : I learned that how the system call and understood the linux kernel operates when it is called by user. 
+* HURSUNGYUN (2014-19768): I learned that how the system call and understood the linux kernel operates when it is called by user. 
 
-* HURSUNGYUN (2014-
+* YEONWOOKIM (2014-17184): By creating a new custom-made system call, we concretely understood the process of how system call operates in both user and kernel spaces.
 
 * HURSUNGYUN (2013-
