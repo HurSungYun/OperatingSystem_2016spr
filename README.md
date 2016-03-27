@@ -86,6 +86,6 @@
 
 * HURSUNGYUN (2014-19768): I learned that how the system call and understood the linux kernel operates when it is called by user. 
 
-* HURSUNGYUN (2014-17184): By creating a new custom-made system call, we concretely understood the process of how system call operates in both user and kernel spaces.
+* YEONWOOKIM (2014-17184): By creating a new custom-made system call, we concretely understood the process of how system call operates in both user and kernel spaces.
 
 * HURSUNGYUN (2013-
