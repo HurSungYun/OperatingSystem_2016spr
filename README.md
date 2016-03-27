@@ -65,7 +65,7 @@
 
 ### 3.3a Experiments
 
- * Every time a new application is started, one or two related task appears as a child of launchpad and it remains even if we force stopped the application by pressing the home button.
+ * Every time a new application is started, one or two related task appears as a child of launchpad and it remains even if we stopped the application by pressing the home button.
 
  * The tasks under the launchpad disappears when we do the clear all(long press the home button and press the clear all button). 
 
