@@ -1,8 +1,11 @@
 
 # 1. How to build the kernel
 
-* Build the revised kernel and push it into your device. Enter the linux/ directory and type
+* After cloning our git repository, check out to branch proj1
 
+> git checkout proj1
+
+* Build the revised kernel and push it into your device. Enter the linux/ directory and type
 
 >  ./build.sh tizen_tm1 USR
 
@@ -24,6 +27,9 @@
 
 >  sdb shell /home/developer/test
 
+* If you want to test with different buffer sizes, change the __MAX__ value in line 7 of tests/test.c
+
+> vi tests/test.c
 
 # 2. Description of design & implementation
 
