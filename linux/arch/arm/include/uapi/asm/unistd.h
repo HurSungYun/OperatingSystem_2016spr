@@ -412,6 +412,16 @@
 #define __NR_renameat2			(__NR_SYSCALL_BASE+382)
 */
 #define __NR_seccomp			(__NR_SYSCALL_BASE+383)
+#define __NR_set_rotation		(__NR_SYSCALL_BASE+384)
+
+/* Reserve for proj2_2
+
+#define __NR_rotlock_read		(__NR_SYSCALL_BASE+385)
+#define __NR_rotlock_write		(__NR_SYSCALL_BASE+386)
+
+*/
+
+
 
 /*
  * This may need to be greater than __NR_last_syscall+1 in order to
