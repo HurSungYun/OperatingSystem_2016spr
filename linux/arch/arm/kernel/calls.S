@@ -394,10 +394,13 @@
 		CALL(sys_ni_syscall)		/* reserved sys_renameat2     */
 		CALL(sys_seccomp)
 		CALL(set_rotation)      /* system call for set_rotation */
-		CALL(sys_ni_syscall)        /* reserved for rotlock_read */
-		CALL(sys_ni_syscall)        /* reserved for rotlock_write */
-		CALL(sys_ni_syscall)  
-                
+/* 385 */	CALL(rotlock_read)	/* system call for rotlock_read */
+		CALL(rotlock_write)	/* system call for rotlock_write */
+		CALL(rotunlock_read)	/* system call for rotunlock_read */
+		CALL(rotunlock_write) 	/* system call for rotunlock_write */
+		CALL(sys_ni_syscall)	/* dummy calls */
+/* 390 */	CALL(sys_ni_syscall)	/* dummy calls */
+		CALL(sys_ni_syscall)	/* dummy calls */
 
 #ifndef syscalls_counted
 .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
