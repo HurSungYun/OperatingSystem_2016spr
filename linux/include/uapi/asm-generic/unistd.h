@@ -703,6 +703,21 @@ __SYSCALL(__NR_renameat2, sys_renameat2)
 #define __NR_seccomp 277
 __SYSCALL(__NR_seccomp, sys_seccomp)
 
+#define __NR_set_rotation 384
+__SYSCALL(__NR_set_rotation, set_rotation)
+
+#define __NR_rotlock_read 385
+__SYSCALL(__NR_rotlock_read, rotlock_read)
+
+#define __NR_rotlock_write 386
+__SYSCALL(__NR_rotlock_write, rotlock_write)
+
+#define __NR_rotunlock_read 387
+__SYSCALL(__NR_rotunlock_read, rotunlock_read)
+
+#define __NR_rotunlock_write 388
+__SYSCALL(__NR_rotunlock_write, rotunlock_write)
+
 #undef __NR_syscalls
 #define __NR_syscalls 278
 
