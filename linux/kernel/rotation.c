@@ -285,6 +285,7 @@ int rotunlock_write(struct rotation_range *rot)
   struct list_head *p;
   struct list_head *n;
   int found = FALSE;
+  int exist_waiting_reader = FALSE;
 
   spin_lock(&stat_lock);
 
@@ -299,8 +300,24 @@ int rotunlock_write(struct rotation_range *rot)
     if (distance <= a->range.degree_range + rot->degree_range){
        if (a->rw == READER) {
          wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID) );  /* TODO: error */
+				 exist_waiting_reader = TRUE;
        }
     }
+  }
+
+  if(exist_waiting_reader == FALSE){
+    list_for_each_safe(p, n, &lock_waiting) {
+      a = list_entry(p, struct lock_list, lst);
+      distance = a->range.rot.degree - rot->rot.degree;
+      if (distance < 0) distance = -distance;
+      if (distance > 180) distance = 360 - distance;
+      if (distance <= a->range.degree_range + rot->degree_range){
+         if(a->rw == WRITER){
+           wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID) );
+           break;
+         }
+      }
+    } 
   }
 
   list_for_each_safe(p, n, &lock_acquired){
