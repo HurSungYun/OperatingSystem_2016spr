@@ -4,6 +4,7 @@
  *  Copyright (C) 1991, 1992  Linus Torvalds
  */
 
+//#include <linux/rotation.h>
 #include <linux/mm.h>
 #include <linux/slab.h>
 #include <linux/interrupt.h>
@@ -718,6 +719,7 @@ static inline void check_stack_usage(void) {}
 
 void do_exit(long code)
 {
+  //exit_rotlock();
 	struct task_struct *tsk = current;
 	int group_dead;
 
