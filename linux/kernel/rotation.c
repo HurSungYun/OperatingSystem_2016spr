@@ -124,30 +124,28 @@ int set_rotation(struct dev_rotation *rot)
       if (distance < 0) distance = -distance;
       if (distance > 180) distance = 360 - distance;
     
-      if (distance <= p->range.degree_range + rot->degree_range){
-        if(p->rw == WRITER){
+      if (distance <= p->range.degree_range + rot->degree_range && p->rw == WRITER){
           printk("----------------------writer here!!!!!\n");
           found = TRUE;
           break;
-        }
-        else if(p->rw == READER){
-          list_for_each_safe(a_prime, m, &lock_waiting){
-            p_prime = list_entry(a_prime, struct lock_list, lst);
-            distance_prime = p_prime->range.rot.degree - rot->rot.degree;
-            if(distance_prime < 0) distance_prime = -distance_prime;
-            if(distance_prime > 180) distance_prime = 360 - distance_prime;
-            
-            if(distance_prime <= p_prime->range.degree_range + rot->degree_range && p_prime->rw == WRITER){
-              printk("-------------------reader && waitingwriter here!!!\n");
-              found = TRUE;
-              break;
-            }
-          }
-          if(found == TRUE) break;
+      }
+    }
+    if (found == FALSE) {
+      list_for_each_safe(a, n, &lock_waiting) {
+        p = list_entry(a, struct lock_list, lst);
+        distance = p->range.rot.degree - rot->rot.degree;
+        if (distance < 0) distance = -distance;
+        if (distance > 180) distance = 360 - distance;
+
+        if (distance <= p->range.degree_range + rot->degree_range && p->rw == WRITER) {
+          printk("---------------------no lock and waiting writer here!!\n");
+          found = TRUE;
+          break;
         }
       }
     }
     if(found == FALSE) break;
+
     spin_unlock(&stat_lock);
     set_current_state(TASK_INTERRUPTIBLE);
     schedule();
@@ -221,20 +219,6 @@ int set_rotation(struct dev_rotation *rot)
 				found = TRUE;
 				break;
 			}
-      /*else if (p->rw == WRITER) {
-				list_for_each_safe(a_prime, m, &lock_waiting){
-					p_prime = list_entry(a_prime, struct lock_list, lst);
-					distance_prime = p_prime->range.rot.degree - rot->rot.degree;
-					if(distance_prime < 0) distance_prime = -distance_prime;
-					if(distance_prime > 180) distance_prime = 360 - distance_prime;
-
-					if(distance_prime <= p_prime->range.degree_range + rot->degree_range && p_prime->rw == READER){
-						found = TRUE;
-						break;
-					}
-				}
-				if(found == TRUE) break;
-			}*/
 		}
 		if(found == FALSE) break;
     spin_unlock(&stat_lock);
