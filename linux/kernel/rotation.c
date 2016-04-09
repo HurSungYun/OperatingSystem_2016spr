@@ -36,14 +36,18 @@ void exit_rotlock(void) {
 
   list_for_each_safe(p, n, &lock_waiting) {
     a = list_entry(p, struct lock_list, lst);
-    list_del(p);
-    kfree(a);
+    if (a->pid == current->pid) {
+      list_del(p);
+      kfree(a);
+    }
   }
 
   list_for_each_safe(p, n, &lock_acquired) {
     a = list_entry(p, struct lock_list, lst);
-    list_del(p);
-    kfree(a);
+    if (a->pid == current->pid) {
+      list_del(p);
+      kfree(a);
+    }
   }
 }
 
