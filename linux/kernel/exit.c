@@ -719,7 +719,7 @@ static inline void check_stack_usage(void) {}
 
 void do_exit(long code)
 {
-  //exit_rotlock();
+  exit_rotlock();
 	struct task_struct *tsk = current;
 	int group_dead;
 
