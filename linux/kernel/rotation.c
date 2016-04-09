@@ -165,7 +165,7 @@ int set_rotation(struct dev_rotation *rot)
     spin_lock(&stat_lock);
   }
 
-  list_del(&(d->lst));
+  list_del_init(&(d->lst));
   list_add(&(d->lst), &lock_acquired);
 
   spin_unlock(&stat_lock);
@@ -236,7 +236,7 @@ int set_rotation(struct dev_rotation *rot)
     spin_lock(&stat_lock);
 	}
 
-	list_del(&(d->lst));
+	list_del_init(&(d->lst));
 	list_add(&(d->lst), &lock_acquired);
 
 	spin_unlock(&stat_lock);
