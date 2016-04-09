@@ -29,6 +29,24 @@ DEFINE_SPINLOCK(stat_lock);
 struct list_head lock_waiting = LIST_HEAD_INIT(lock_waiting);
 struct list_head lock_acquired = LIST_HEAD_INIT(lock_acquired);
 
+void exit_rotlock(void) {
+  struct list_head *p;
+  struct list_head *n;
+  struct lock_list *a;
+
+  list_for_each_safe(p, n, &lock_waiting) {
+    a = list_entry(p, struct lock_list, lst);
+    list_del(p);
+    kfree(a);
+  }
+
+  list_for_each_safe(p, n, &lock_acquired) {
+    a = list_entry(p, struct lock_list, lst);
+    list_del(p);
+    kfree(a);
+  }
+}
+
 int set_rotation(struct dev_rotation *rot)
 {
   int cnt = 0;
@@ -62,7 +80,6 @@ int set_rotation(struct dev_rotation *rot)
     }
   }
 
-
   spin_unlock(&stat_lock);
   spin_unlock(&rot_lock);
 
@@ -77,13 +94,9 @@ int set_rotation(struct dev_rotation *rot)
   int high = temp.rot.degree + temp.degree_range;
 
   int distance;
-  int distance_prime;
   struct list_head *a;
   struct list_head *n;
-  struct list_head *a_prime;
-  struct list_head *m;
   struct lock_list *p;
-  struct lock_list *p_prime;
   int found = FALSE;
 
   struct lock_list *d = kmalloc(sizeof(struct lock_list), GFP_KERNEL);
@@ -168,13 +181,9 @@ int set_rotation(struct dev_rotation *rot)
   int high = temp.rot.degree + temp.degree_range;
 
   int distance;
-  int distance_prime;
   struct list_head *a;
   struct list_head *n;
-  struct list_head *a_prime;
-  struct list_head *m;
   struct lock_list *p;
-  struct lock_list *p_prime;
   int found = FALSE;
 
   struct lock_list *d = kmalloc(sizeof(struct lock_list), GFP_KERNEL);
