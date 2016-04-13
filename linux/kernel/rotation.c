@@ -101,6 +101,7 @@ int rotlock_read(struct rotation_range *rot)
   struct lock_list *p;
   int found = FALSE;
   int distance_2;
+  int distance_curr;
 
   struct lock_list *d = kmalloc(sizeof(struct lock_list), GFP_KERNEL);
   if (d == NULL) return -ENOMEM;
@@ -161,7 +162,12 @@ int rotlock_read(struct rotation_range *rot)
         }
       }
     }
-    if(found == FALSE) break;
+
+		distance_curr = temp.rot.degree - curr_rot.degree;
+    if (distance_curr < 0) distance_curr = - distance_curr;
+    if (distance_curr > 180) distance_curr = 360 - distance_curr;
+
+    if(found == FALSE && distance_curr <= temp.degree_range) break;
 
     spin_unlock(&one_lock);
     set_current_state(TASK_INTERRUPTIBLE);
@@ -189,6 +195,7 @@ int rotlock_write(struct rotation_range *rot)
   struct list_head *n;
   struct lock_list *p;
   int found = FALSE;
+  int distance_curr;
 
   struct lock_list *d = kmalloc(sizeof(struct lock_list), GFP_KERNEL);
   if (d == NULL) return -ENOMEM;
@@ -230,7 +237,12 @@ int rotlock_write(struct rotation_range *rot)
         break;
       }
     }
-    if(found == FALSE) break;
+    distance_curr = temp.rot.degree - curr_rot.degree;
+    if (distance_curr < 0) distance_curr = - distance_curr;
+    if (distance_curr > 180) distance_curr = 360 - distance_curr;
+
+    if(found == FALSE && distance_curr <= temp.degree_range) break;
+
     spin_unlock(&one_lock);
     set_current_state(TASK_INTERRUPTIBLE);
     schedule();
@@ -262,18 +274,7 @@ int rotunlock_read(struct rotation_range *rot)
   spin_lock(&one_lock);
 
   int distance;
-  list_for_each_safe(p, n, &lock_waiting) {
-    a = list_entry(p, struct lock_list, lst);
-    distance = a->range.rot.degree - temp.rot.degree;
-    if (distance < 0) distance = -distance;
-    if (distance > 180) distance = 360 - distance;
-    if (distance <= a->range.degree_range + temp.degree_range){
-      if (a->rw == WRITER) {
-        wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID) );
-        break;
-      }
-    }
-  }
+	int distance_curr;
 
   list_for_each_safe(p, n, &lock_acquired) {
     a = list_entry(p, struct lock_list, lst);
@@ -286,6 +287,26 @@ int rotunlock_read(struct rotation_range *rot)
     }
   }
   if (found == FALSE) /*error*/;
+
+  list_for_each_safe(p, n, &lock_waiting) {
+    a = list_entry(p, struct lock_list, lst);
+
+    distance = a->range.rot.degree - temp.rot.degree;
+    if (distance < 0) distance = -distance;
+    if (distance > 180) distance = 360 - distance;
+
+    distance_curr = temp.rot.degree - curr_rot.degree;
+    if (distance_curr < 0) distance_curr = - distance_curr;
+    if (distance_curr > 180) distance_curr = 360 - distance_curr;
+
+    if (distance <= a->range.degree_range + temp.degree_range && distance_curr <= temp.degree_range){
+      if (a->rw == WRITER) {
+        wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID) );
+        break;
+      }
+    }
+  }
+
 
   spin_unlock(&one_lock);
 
@@ -307,16 +328,8 @@ int rotunlock_write(struct rotation_range *rot)
 
   /* waking up */
   int distance;
-  list_for_each_safe(p, n, &lock_waiting) {
-    a = list_entry(p, struct lock_list, lst);
-    distance = a->range.rot.degree - temp.rot.degree;
-    if (distance < 0) distance = -distance;
-    if (distance > 180) distance = 360 - distance;
-    if (distance <= a->range.degree_range + temp.degree_range){
-        wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID) );
-    }
-  }
-  
+  int distance_curr;
+
 	list_for_each_safe(p, n, &lock_acquired){
     a = list_entry(p, struct lock_list, lst);
 		if(a->pid == current->pid && a->rw == WRITER &&
@@ -327,8 +340,25 @@ int rotunlock_write(struct rotation_range *rot)
 			break;
 		}
 	}
-
+ 
   if(found == FALSE) /*error*/;
+
+  list_for_each_safe(p, n, &lock_waiting) {
+    a = list_entry(p, struct lock_list, lst);
+
+    distance = a->range.rot.degree - temp.rot.degree;
+    if (distance < 0) distance = -distance;
+    if (distance > 180) distance = 360 - distance;
+
+		distance_curr = temp.rot.degree - curr_rot.degree;
+    if (distance_curr < 0) distance_curr = - distance_curr;
+    if (distance_curr > 180) distance_curr = 360 - distance_curr;
+
+    if (distance <= a->range.degree_range + temp.degree_range && distance_curr <= temp.degree_range){
+        wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID) );
+    }
+  }
+  
 
   spin_unlock(&one_lock);
 
