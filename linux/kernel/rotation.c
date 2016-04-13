@@ -112,7 +112,7 @@ int rotlock_read(struct rotation_range *rot)
   spin_lock(&one_lock);
 
   /* waiting rotation*/
-  list_add(&(d->lst), &lock_waiting);
+  list_add_tail(&(d->lst), &lock_waiting);
 
   distance = curr_rot.degree - temp.rot.degree;
   if (distance < 0) distance = - distance;
@@ -170,7 +170,7 @@ int rotlock_read(struct rotation_range *rot)
   }
 
   list_del_init(&(d->lst));
-  list_add(&(d->lst), &lock_acquired);
+  list_add_tail(&(d->lst), &lock_acquired);
 
   spin_unlock(&one_lock);
 
@@ -200,7 +200,7 @@ int rotlock_write(struct rotation_range *rot)
   spin_lock(&one_lock);
 
   /* waiting rotation*/
-  list_add(&(d->lst), &lock_waiting);
+  list_add_tail(&(d->lst), &lock_waiting);
 
   distance = curr_rot.degree - temp.rot.degree;
   if (distance < 0) distance = - distance;
@@ -238,7 +238,7 @@ int rotlock_write(struct rotation_range *rot)
   }
 
   list_del_init(&(d->lst));
-  list_add(&(d->lst), &lock_acquired);
+  list_add_tail(&(d->lst), &lock_acquired);
 
   spin_unlock(&one_lock);
 
@@ -298,7 +298,6 @@ int rotunlock_write(struct rotation_range *rot)
   struct list_head *p;
   struct list_head *n;
   int found = FALSE;
-  int exist_waiting_reader = FALSE;
   struct rotation_range temp;
   copy_from_user(&temp, rot, sizeof(struct rotation_range));
   if (temp.rot.degree < 0 || temp.rot.degree >= 360) return -EINVAL;
@@ -309,32 +308,26 @@ int rotunlock_write(struct rotation_range *rot)
 
   /* waking up */
   int distance;
+  int flag = FALSE;
+  int wait_reader = FALSE;
   list_for_each_safe(p, n, &lock_waiting) {
     a = list_entry(p, struct lock_list, lst);
     distance = a->range.rot.degree - temp.rot.degree;
     if (distance < 0) distance = -distance;
     if (distance > 180) distance = 360 - distance;
     if (distance <= a->range.degree_range + temp.degree_range){
-      if (a->rw == READER) {
+      if (flag == FALSE) {
+        flag = TRUE;
+        if (a->rw == READER) wait_reader = TRUE;
+      }
+      if (wait_reader == TRUE && a->rw == READER) {
         wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID) ); 
-        exist_waiting_reader = TRUE;
+      }
+      else if (wait_reader == FALSE && a->rw == WRITER) {
+        wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID) );
+        break;
       }
     }
-  }
-
-  if(exist_waiting_reader == FALSE){
-    list_for_each_safe(p, n, &lock_waiting) {
-      a = list_entry(p, struct lock_list, lst);
-      distance = a->range.rot.degree - temp.rot.degree;
-      if (distance < 0) distance = -distance;
-      if (distance > 180) distance = 360 - distance;
-      if (distance <= a->range.degree_range + temp.degree_range){
-        if(a->rw == WRITER){
-          wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID) );
-          break;
-        }
-      }
-    } 
   }
 
   list_for_each_safe(p, n, &lock_acquired){
