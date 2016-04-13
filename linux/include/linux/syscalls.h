@@ -77,6 +77,7 @@ struct sigaltstack;
 #include <linux/quota.h>
 #include <linux/key.h>
 #include <trace/syscall.h>
+#include <linux/rotation.h>
 
 /*
  * __MAP - apply a macro to syscall arguments
@@ -195,6 +196,12 @@ extern struct trace_event_functions exit_syscall_print_funcs;
 	}								\
 	SYSCALL_ALIAS(sys##name, SyS##name);				\
 	static inline long SYSC##name(__MAP(x,__SC_DECL,__VA_ARGS__))
+
+asmlinkage int set_rotation(struct dev_rotation *rot);
+asmlinkage int rotlock_read(struct rotation_range *rot);
+asmlinkage int rotlock_write(struct rotation_range *rot);
+asmlinkage int rotunlock_read(struct rotation_range *rot);
+asmlinkage int rotunlock_read(struct rotation_range *rot);
 
 asmlinkage long sys_time(time_t __user *tloc);
 asmlinkage long sys_stime(time_t __user *tptr);
