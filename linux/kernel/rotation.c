@@ -23,8 +23,7 @@ struct lock_list{
 
 struct dev_rotation curr_rot;
 
-DEFINE_SPINLOCK(rot_lock);
-DEFINE_SPINLOCK(stat_lock);
+DEFINE_SPINLOCK(one_lock);
 
 struct list_head lock_waiting = LIST_HEAD_INIT(lock_waiting);
 struct list_head lock_acquired = LIST_HEAD_INIT(lock_acquired);
@@ -58,34 +57,31 @@ int set_rotation(struct dev_rotation *rot)
   struct list_head *p;
   struct list_head *n;
   int deg;
-  int high;
-  int low;
+  int distance;
   struct rotation_range *temp_r;
 
-  spin_lock(&rot_lock);
-  spin_lock(&stat_lock);
+  spin_lock(&one_lock);
+
+  if (rot->degree < 0 || rot->degree >= 360)
+    return -EINVAL;
 
   copy_from_user(&curr_rot, rot, sizeof(struct dev_rotation));
 
-  /* TODO deg >= 360 --> ERROR! */
 
   list_for_each_safe(p, n, &lock_waiting){
     a = list_entry(p, struct lock_list, lst);
     temp_r = &(a->range);
     deg = temp_r->rot.degree;
-    high = deg + temp_r->degree_range;
-    low = deg - temp_r->degree_range;
-
-    if( ( low <= curr_rot.degree && curr_rot.degree <= high && high < 360 && low >= 0 ) ||
-        ( low < 0 && high < 360 && ( curr_rot.degree <= high || (low+360) <= curr_rot.degree ) ) ||
-        ( low >= 0 && high >= 360 && ( curr_rot.degree <= (high-360) || low <= curr_rot.degree) ) ){
+    distance = curr_rot.degree - deg;
+    if (distance < 0) distance = - distance;
+    if (distance > 180) distance = 360 - distance;
+    if (distance <= temp_r->degree_range) {
        cnt++;
        wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID)  ); /* TODO: error handling */
     }
   }
 
-  spin_unlock(&stat_lock);
-  spin_unlock(&rot_lock);
+  spin_unlock(&one_lock);
 
   return cnt;
 }
@@ -94,46 +90,39 @@ int set_rotation(struct dev_rotation *rot)
 {
   struct rotation_range temp;
   copy_from_user(&temp, rot, sizeof(struct rotation_range));
-  int low = temp.rot.degree - temp.degree_range;
-  int high = temp.rot.degree + temp.degree_range;
+  if (temp.rot.degree < 0 || temp.rot.degree >= 360) return -EINVAL;
+  if (temp.degree_range >= 180) return -EINVAL;
 
   int distance;
   struct list_head *a;
   struct list_head *n;
   struct lock_list *p;
   int found = FALSE;
+  int distance_2;
 
   struct lock_list *d = kmalloc(sizeof(struct lock_list), GFP_KERNEL);
+  if (d == NULL) return -ENOMEM;
   d->range = *rot;
   d->pid = current->pid;
   d->rw = READER;
 
-  spin_lock(&stat_lock);
+
+  spin_lock(&one_lock);
 
   /* waiting rotation*/
   list_add(&(d->lst), &lock_waiting);
-  
-  spin_unlock(&stat_lock);
 
-  spin_lock(&rot_lock);
-
-  while( !( ( low <= curr_rot.degree && curr_rot.degree <= high && high < 360 && low >= 0 ) ||
-        ( low < 0 && high < 360 && ( curr_rot.degree <= high || (low+360) <= curr_rot.degree ) ) ||
-        ( low >= 0 && high >= 360 && ( curr_rot.degree <= (high-360) || low <= curr_rot.degree) ) ) ) {
-    spin_unlock(&rot_lock);
+  distance = curr_rot.degree - temp.rot.degree;
+  if (distance < 0) distance = - distance;
+  if (distance > 180) distance = 360 - distance;
+  while (distance > temp.degree_range) {
+    spin_unlock(&one_lock);
     set_current_state(TASK_INTERRUPTIBLE);
     schedule();
-    spin_lock(&rot_lock);
+    spin_lock(&one_lock);
   }
- 
-  spin_unlock(&rot_lock);
-
-  spin_lock(&stat_lock);
-
-  /*TODO: put into the acquired queue with checking policies */
 
   while(1){
-    printk("----------------------------looping!!!!!\n");
     found = FALSE;
     list_for_each_safe(a, n, &lock_acquired){
       p = list_entry(a, struct lock_list, lst);
@@ -142,7 +131,6 @@ int set_rotation(struct dev_rotation *rot)
       if (distance > 180) distance = 360 - distance;
     
       if (distance <= p->range.degree_range + rot->degree_range && p->rw == WRITER){
-          printk("----------------------writer here!!!!!\n");
           found = TRUE;
           break;
       }
@@ -151,11 +139,15 @@ int set_rotation(struct dev_rotation *rot)
       list_for_each_safe(a, n, &lock_waiting) {
         p = list_entry(a, struct lock_list, lst);
         distance = p->range.rot.degree - rot->rot.degree;
+        distance_2 = p->range.rot.degree - curr_rot.degree;
         if (distance < 0) distance = -distance;
         if (distance > 180) distance = 360 - distance;
+        if (distance_2 < 0) distance_2 = - distance_2;
+        if (distance_2 > 180) distance_2 = 360 - distance_2;
 
-        if (distance <= p->range.degree_range + rot->degree_range && p->rw == WRITER) {
-          printk("---------------------no lock and waiting writer here!!\n");
+        if (distance <= p->range.degree_range + rot->degree_range 
+            && distance_2 <= p->range.degree_range
+            && p->rw == WRITER) {
           found = TRUE;
           break;
         }
@@ -163,16 +155,16 @@ int set_rotation(struct dev_rotation *rot)
     }
     if(found == FALSE) break;
 
-    spin_unlock(&stat_lock);
+    spin_unlock(&one_lock);
     set_current_state(TASK_INTERRUPTIBLE);
     schedule();
-    spin_lock(&stat_lock);
+    spin_lock(&one_lock);
   }
 
   list_del_init(&(d->lst));
   list_add(&(d->lst), &lock_acquired);
 
-  spin_unlock(&stat_lock);
+  spin_unlock(&one_lock);
 
   return 0;
 }
@@ -181,8 +173,8 @@ int set_rotation(struct dev_rotation *rot)
 {
   struct rotation_range temp;
   copy_from_user(&temp, rot, sizeof(struct rotation_range));
-  int low = temp.rot.degree - temp.degree_range;
-  int high = temp.rot.degree + temp.degree_range;
+  if (temp.rot.degree < 0 || temp.rot.degree >= 360) return -EINVAL;
+  if (temp.degree_range >= 180) return -EINVAL;
 
   int distance;
   struct list_head *a;
@@ -191,34 +183,26 @@ int set_rotation(struct dev_rotation *rot)
   int found = FALSE;
 
   struct lock_list *d = kmalloc(sizeof(struct lock_list), GFP_KERNEL);
+  if (d == NULL) return -ENOMEM;
   d->range = *rot;
   d->pid = current->pid;
   d->rw = WRITER;
 
-  spin_lock(&stat_lock);
+
+  spin_lock(&one_lock);
 
   /* waiting rotation*/
   list_add(&(d->lst), &lock_waiting);
   
-  spin_unlock(&stat_lock);
-
-  
-  spin_lock(&rot_lock);
-
-  while( !( ( low <= curr_rot.degree && curr_rot.degree <= high && high < 360 && low >= 0 ) ||
-        ( low < 0 && high < 360 && ( curr_rot.degree <= high || (low+360) <= curr_rot.degree ) ) ||
-        ( low >= 0 && high >= 360 && ( curr_rot.degree <= (high-360) || low <= curr_rot.degree) ) ) ) {
-    spin_unlock(&rot_lock);
+  distance = curr_rot.degree - temp.rot.degree;
+  if (distance < 0) distance = - distance;
+  if (distance > 180) distance = 360 - distance;
+  while (distance > temp.degree_range) {
+    spin_unlock(&one_lock);
     set_current_state(TASK_INTERRUPTIBLE);
     schedule();
-    spin_lock(&rot_lock);
+    spin_lock(&one_lock);
   }
-
-  spin_unlock(&rot_lock);
-
-  spin_lock(&stat_lock);
-
-  /* TODO: if waiting reader exists, a writer waits no matter what */
 
 	while(1){
 		found = FALSE;
@@ -234,16 +218,16 @@ int set_rotation(struct dev_rotation *rot)
 			}
 		}
 		if(found == FALSE) break;
-    spin_unlock(&stat_lock);
+    spin_unlock(&one_lock);
 		set_current_state(TASK_INTERRUPTIBLE);
 		schedule();
-    spin_lock(&stat_lock);
+    spin_lock(&one_lock);
 	}
 
 	list_del_init(&(d->lst));
 	list_add(&(d->lst), &lock_acquired);
 
-	spin_unlock(&stat_lock);
+	spin_unlock(&one_lock);
 
 	return 0;
 }
@@ -258,10 +242,9 @@ int rotunlock_read(struct rotation_range *rot)
   struct list_head *n;
   int found = FALSE;
 
-  spin_lock(&stat_lock);
+  spin_lock(&one_lock);
 
 
-  /*TODO: waking up */
   int distance;
   list_for_each_safe(p, n, &lock_waiting) {
     a = list_entry(p, struct lock_list, lst);
@@ -270,7 +253,7 @@ int rotunlock_read(struct rotation_range *rot)
     if (distance > 180) distance = 360 - distance;
     if (distance <= a->range.degree_range + rot->degree_range){
        if (a->rw == WRITER) {
-         wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID) );  /* TODO: error */
+         wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID) );
          break;
        }
     }
@@ -278,7 +261,7 @@ int rotunlock_read(struct rotation_range *rot)
 
   list_for_each_safe(p, n, &lock_acquired) {
     a = list_entry(p, struct lock_list, lst);
-    if (a->pid == current->pid && a->rw == READER) {   /* TODO: how to get the pid */
+    if (a->pid == current->pid && a->rw == READER) { 
       found = TRUE;
       list_del(p);
       kfree(a);
@@ -287,7 +270,7 @@ int rotunlock_read(struct rotation_range *rot)
   }
   if (found == FALSE) /*error*/;
 
-  spin_unlock(&stat_lock);
+  spin_unlock(&one_lock);
 
   return 0;
 }
@@ -300,7 +283,7 @@ int rotunlock_write(struct rotation_range *rot)
   int found = FALSE;
   int exist_waiting_reader = FALSE;
 
-  spin_lock(&stat_lock);
+  spin_lock(&one_lock);
 
 
   /* waking up */
@@ -312,7 +295,7 @@ int rotunlock_write(struct rotation_range *rot)
     if (distance > 180) distance = 360 - distance;
     if (distance <= a->range.degree_range + rot->degree_range){
        if (a->rw == READER) {
-         wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID) );  /* TODO: error */
+         wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID) ); 
 				 exist_waiting_reader = TRUE;
        }
     }
@@ -345,7 +328,7 @@ int rotunlock_write(struct rotation_range *rot)
 
   if(found == FALSE) /*error*/;
 
-  spin_unlock(&stat_lock);
+  spin_unlock(&one_lock);
 
   return 0;
 }
