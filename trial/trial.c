@@ -6,8 +6,8 @@
 #define ROTUNLOCK_READ 387
 #define ROTUNLOCK_WRITE 388
 
-#define DEFAULT_DEGREE 180
-#define DEFAULT_RANGE 30
+#define DEFAULT_DEGREE 90
+#define DEFAULT_RANGE 90
 
 FILE *input_integer;
 
