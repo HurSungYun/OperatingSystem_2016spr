@@ -61,6 +61,9 @@ int set_rotation(struct dev_rotation *rot)
   int deg;
   int distance;
   struct rotation_range *temp_r;
+  int iswriter = FALSE;
+  int isreader = FALSE;
+  int reader_count = 0;
 
   if (rot->degree < 0 || rot->degree >= 360)
     return -EINVAL;
@@ -69,23 +72,68 @@ int set_rotation(struct dev_rotation *rot)
 
   copy_from_user(&curr_rot, rot, sizeof(struct dev_rotation));
 
-  list_for_each_safe(p, n, &lock_waiting){
+  list_for_each_safe(p, n, &lock_acquired) {
     a = list_entry(p, struct lock_list, lst);
     temp_r = &(a->range);
     deg = temp_r->rot.degree;
     distance = curr_rot.degree - deg;
     if (distance < 0) distance = - distance;
     if (distance > 180) distance = 360 - distance;
-    if (distance <= temp_r->degree_range) {
-      printk("wake up!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-      cnt++;
-      wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID)  );
+    if (distance <= temp_r->degree_range && a->rw == WRITER) {
+      iswriter = TRUE;
+      break;
+    }
+    else if (distance <= temp_r->degree_range && a->rw == READER) {
+      isreader = TRUE;
+      break;
     }
   }
 
-  spin_unlock(&one_lock);
-
-  return cnt;
+  if (iswriter == TRUE) {
+    spin_unlock(&one_lock);
+    return 0;
+  }
+  else if (isreader == TRUE) {
+    list_for_each_safe(p, n, &lock_waiting){
+      a = list_entry(p, struct lock_list, lst);
+      temp_r = &(a->range);
+      deg = temp_r->rot.degree;
+      distance = curr_rot.degree - deg;
+      if (distance < 0) distance = - distance;
+      if (distance > 180) distance = 360 - distance;
+      if (distance <= temp_r->degree_range && a->rw == WRITER) {
+        spin_unlock(&one_lock);
+        return 0;
+      }
+      else if (distance <=temp_r->degree_range && a->rw == READER) {
+        wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID)  );
+        reader_count ++;
+      }
+    }
+    spin_unlock(&one_lock);
+    return reader_count;
+  }
+  else {
+    list_for_each_safe(p, n, &lock_waiting){
+      a = list_entry(p, struct lock_list, lst);
+      temp_r = &(a->range);
+      deg = temp_r->rot.degree;
+      distance = curr_rot.degree - deg;
+      if (distance < 0) distance = - distance;
+      if (distance > 180) distance = 360 - distance;
+      if (distance <= temp_r->degree_range && a->rw == WRITER) {
+        wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID)  );
+        spin_unlock(&one_lock);
+        return 1;
+      }
+      else if (distance <= temp_r->degree_range && a->rw == READER) {
+        wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID)  );
+        reader_count ++;
+      }
+    }
+    spin_unlock(&one_lock);
+    return reader_count;
+  }
 }
 
 int rotlock_read(struct rotation_range *rot)
@@ -114,21 +162,6 @@ int rotlock_read(struct rotation_range *rot)
 
   /* waiting rotation*/
   list_add_tail(&(d->lst), &lock_waiting);
-
-  distance = curr_rot.degree - temp.rot.degree;
-  if (distance < 0) distance = - distance;
-  if (distance > 180) distance = 360 - distance;
-  while (distance > temp.degree_range) {
-    spin_unlock(&one_lock);
-    set_current_state(TASK_INTERRUPTIBLE);
-    schedule();
-    spin_lock(&one_lock);
-    distance = curr_rot.degree - temp.rot.degree;
-    if (distance < 0) distance = - distance;
-    if (distance > 180) distance = 360 - distance;
-    printk("still in loop ---------------------------\n");
-  }
-  printk("out of loop ---------------------------\n");
 
   while(1){
     found = FALSE;
@@ -208,21 +241,6 @@ int rotlock_write(struct rotation_range *rot)
 
   /* waiting rotation*/
   list_add_tail(&(d->lst), &lock_waiting);
-
-  distance = curr_rot.degree - temp.rot.degree;
-  if (distance < 0) distance = - distance;
-  if (distance > 180) distance = 360 - distance;
-  while (distance > temp.degree_range) {
-    spin_unlock(&one_lock);
-    set_current_state(TASK_INTERRUPTIBLE);
-    schedule();
-    spin_lock(&one_lock);
-    distance = curr_rot.degree - temp.rot.degree;
-    if (distance < 0) distance = - distance;
-    if (distance > 180) distance = 360 - distance;
-    printk("still in loop ---------------------------\n");
-  }
-  printk("out of loop ---------------------------\n");
 
   while(1){
     found = FALSE;
