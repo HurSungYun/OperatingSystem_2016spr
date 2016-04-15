@@ -82,8 +82,23 @@ We implemented only 6 functions. 5 functions are syscall functions and the other
  * exit_rotlock()
     + exit\_rotlock() is used for correctness when exit. It is called when do\_exit() is processed in linux kernel. Therefore, it can prevent error at the next execution. 
 
+We used one global lock and it is spinlock. Also, We have two lists called "lock\_waiting" and "lock\_acquired". They store list of waiting tasks and acquired tasks each. The list is called lock\_list in our code and its definition is
+
+```
+struct lock_list{
+  struct rotation_range range;
+  struct list_head lst;
+  pid_t pid;
+  int rw;
+};
+```
+
+and they are dynamically allocated. We iterates these lists when we need to manipulate it. 
 
 
+Additionally, we check overlapping area using this method.
+
+* (distance between the center of two range) <= (sum of range_degree of two)
 
 
  # 5. Lessons learned
