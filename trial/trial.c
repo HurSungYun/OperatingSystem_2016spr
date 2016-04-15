@@ -19,30 +19,34 @@ int main(int argc, char* argv[])
   test_range.degree_range = DEFAULT_RANGE;
   
   while(true){
-    printf("read started\n");
     ret = syscall(ROTLOCK_READ, &test_range);
+    printf("rotlock_read completed\n");
     input_integer = fopen("integer","r");
     fscanf(input_integer, "%d", &n);
     
-    printf("read %d\n",n);
+    printf("read %d now....\n",n);
 
     t = n;
-    // if ( n == 1 ) ERROR!!!!
+    if(t==1) printf("1\n");
+    else{
 
-    while(t!=1){
-      flag = 0;
-      for(i = 2;i <= t; i++){
-        if(t % i == 0){
-          printf("%d ",i);
-          t = t / i;
-          flag = 1;
-          break;
+		  while(t!=1){
+        flag = 0;
+        for(i = 2;i <= t; i++){
+          if(t % i == 0){
+            printf("%d ",i);
+            t = t / i;
+            flag = 1;
+            break;
+          }
         }
       }
+      printf("\n");
     }
-    printf("\n");
+
     fclose(input_integer);
     ret = syscall(ROTUNLOCK_READ, &test_range);
+    printf("rotunlock_read completed\n");
   }
 
   return 0;

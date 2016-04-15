@@ -14,7 +14,12 @@ FILE *input_integer;
 int main(int argc, char* argv[])
 {
   int ret;
-  int count = atoi(argv[1]);  /* TODO: when argument is NULL */
+  if(argc != 2){
+    printf("number of arguments are not correct \n");
+    return -1;
+  }
+  
+  int count = atoi(argv[1]);
 
   struct rotation_range test_range;
   test_range.rot.degree = DEFAULT_DEGREE;
@@ -24,15 +29,15 @@ int main(int argc, char* argv[])
 
   
   while(1){
-    printf("syscall started\n");
     ret = syscall(ROTLOCK_WRITE, &test_range);
-    printf("syscall ended\n");
+    printf("rotlock_write completed\n");
     input_integer = fopen("integer","w");
     printf("file created\n");
     fprintf(input_integer, "%d", count);
     printf("current number : %d\n",count);
     fclose(input_integer);
     ret = syscall(ROTUNLOCK_WRITE, &test_range);
+    printf("rotunlock_write completed\n");
     count++;
   }
   return 0;
