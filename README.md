@@ -56,9 +56,36 @@ We set our policy and it is stated below.
 
  
  # 3. High level Design
+
+We have set 5 system calls and it interacts each other. The statement below is how they work.
+
+ * set_rotation()
+    + set\_rotation() is system call function we set. It changes current device rotation. Also, it wakes up all the appropriate tasks considering all cases and return how many tasks get the lock. 
+
+ * rotlock_read()
+    + when rotlock\_read() is called, it checks whether there is a lock-acquired writer which is overlapped with target. If so, make current task sleep. If not, checks whether there is a starved writer lock, and gives a lock if there is no starved writer lock. Otherwise, sleep tasks as well.
+
+ * rotlock_write()
+    + rotlock\_write() is more simple than rotlock\_read(). It checks whether there is a lock which is overlapped with target and gives a lock if there isn't any acquired lock overlapping with target. Otherwise sleep.
+
+ * rotunlock_read()
+    + rotunlock\_read() is consist of two feature. First one is releasing the lock it had before. The second one is re-awaking tasks for liveness. We check whether there is starved writer on waiting list, and waking up if it exists.
+
+ * rotunlock_write()
+    + rotunlock\_write() is also consist of two feature. First one is same as rotlock\_read(). The second feature is a little bit different. It broadcasts all waiting tasks and there would be resulted correctly because of other functions. If there is waiting writer lock, it would grab a lock, and if there's no waiting writer lock, readers grab locks.
+
  
  # 4. Implementation
  
+We implemented only 6 functions. 5 functions are syscall functions and the other one is exit/_rotlock().
+
+ * exit_rotlock()
+    + exit\_rotlock() is used for correctness when exit. It is called when do\_exit() is processed in linux kernel. Therefore, it can prevent error at the next execution. 
+
+
+
+
+
  # 5. Lessons learned
  
  * HURSUNGYUN (2014-19768): I absolutely found that writing concurrent program with correctness is one of the most difficult tasks in the world.
