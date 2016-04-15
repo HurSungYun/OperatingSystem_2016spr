@@ -106,8 +106,25 @@ int set_rotation(struct dev_rotation *rot)
         return 0;
       }
       else if (distance <=temp_r->degree_range && a->rw == READER) {
-        wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID)  );
-        reader_count ++;
+				struct lock_list *cr, *cr_tmp;
+				int dist_wr_aw;
+				int overlapping;
+				overlapping = FALSE;
+        list_for_each_entry_safe(cr, cr_tmp, &lock_waiting, lst){
+					/*check if there is a overlapping writer holding the lock*/
+					if (cr->rw == READER) continue;
+					dist_wr_aw = cr->range.rot.degree - deg;
+					if (dist_wr_aw < 0) dist_wr_aw = - dist_wr_aw;
+					if (dist_wr_aw > 180) dist_wr_aw = 360 - dist_wr_aw;
+					if (dist_wr_aw <= temp_r->degree_range + cr->range.degree_range){ 
+						overlapping = TRUE;
+						break;
+					}
+				}
+				if (overlapping == FALSE){	
+					wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID)  );
+					reader_count ++;
+				}
       }
     }
     spin_unlock(&one_lock);
