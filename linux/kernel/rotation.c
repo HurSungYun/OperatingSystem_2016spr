@@ -341,7 +341,7 @@ int rotunlock_read(struct rotation_range *rot)
   struct rotation_range temp;
   struct task_struct *r_process;
   int distance;
-  int distance_curr;
+  int distance_curr_a;
   
   if (copy_from_user(&temp, rot, sizeof(struct rotation_range)) != 0) return -EINVAL;
   if (temp.rot.degree < 0 || temp.rot.degree >= 360) return -EINVAL;
@@ -368,11 +368,11 @@ int rotunlock_read(struct rotation_range *rot)
     if (distance < 0) distance = -distance;
     if (distance > 180) distance = 360 - distance;
 
-    distance_curr = temp.rot.degree - curr_rot.degree;
-    if (distance_curr < 0) distance_curr = - distance_curr;
-    if (distance_curr > 180) distance_curr = 360 - distance_curr;
+    distance_curr_a = a->range.rot.degree - curr_rot.degree;
+    if (distance_curr_a < 0) distance_curr_a = - distance_curr_a;
+    if (distance_curr_a > 180) distance_curr_a = 360 - distance_curr_a;
 
-    if (distance <= a->range.degree_range + temp.degree_range && distance_curr <= temp.degree_range){
+    if (distance <= a->range.degree_range + temp.degree_range && distance_curr_a <= a->range.degree_range){
       if (a->rw == WRITER) {
           r_process = pid_task( find_vpid(a->pid), PIDTYPE_PID);
           if (r_process == NULL) return -EFAULT;
@@ -397,7 +397,7 @@ int rotunlock_write(struct rotation_range *rot)
   struct rotation_range temp;
   struct task_struct *r_process;
   int distance;
-  int distance_curr;
+  int distance_curr_a;
 
   if (copy_from_user(&temp, rot, sizeof(struct rotation_range)) != 0) return -EINVAL;
   if (temp.rot.degree < 0 || temp.rot.degree >= 360) return -EINVAL;
@@ -425,11 +425,11 @@ int rotunlock_write(struct rotation_range *rot)
     if (distance < 0) distance = -distance;
     if (distance > 180) distance = 360 - distance;
 
-    distance_curr = temp.rot.degree - curr_rot.degree;
-    if (distance_curr < 0) distance_curr = - distance_curr;
-    if (distance_curr > 180) distance_curr = 360 - distance_curr;
+    distance_curr_a = a->range.rot.degree - curr_rot.degree;
+    if (distance_curr_a < 0) distance_curr_a = - distance_curr_a;
+    if (distance_curr_a > 180) distance_curr_a = 360 - distance_curr_a;
 
-    if (distance <= a->range.degree_range + temp.degree_range && distance_curr <= temp.degree_range){
+    if (distance <= a->range.degree_range + temp.degree_range && distance_curr_a <= a->range.degree_range){
           r_process = pid_task( find_vpid(a->pid), PIDTYPE_PID);
           if (r_process == NULL) return -EFAULT;
           wake_up_process( r_process );
