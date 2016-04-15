@@ -64,13 +64,18 @@ int set_rotation(struct dev_rotation *rot)
   int iswriter = FALSE;
   int isreader = FALSE;
   int reader_count = 0;
+  struct lock_list *cr;
+  struct lock_list *cr_tmp;
+  int dist_wr_aw;
+  int overlapping;
+  struct task_struct *r_process;
 
   if (rot->degree < 0 || rot->degree >= 360)
     return -EINVAL;
 
   spin_lock(&one_lock);
 
-  copy_from_user(&curr_rot, rot, sizeof(struct dev_rotation));
+  if ( copy_from_user(&curr_rot, rot, sizeof(struct dev_rotation)) != 0) return -EINVAL;
 
   list_for_each_safe(p, n, &lock_acquired) {
     a = list_entry(p, struct lock_list, lst);
@@ -106,8 +111,24 @@ int set_rotation(struct dev_rotation *rot)
         return 0;
       }
       else if (distance <=temp_r->degree_range && a->rw == READER) {
-        wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID)  );
-        reader_count ++;
+        overlapping = FALSE;
+        list_for_each_entry_safe(cr, cr_tmp, &lock_acquired, lst){
+          /*check if there is a overlapping writer holding the lock*/
+          if (cr->rw == READER) continue;
+          dist_wr_aw = cr->range.rot.degree - deg;
+          if (dist_wr_aw < 0) dist_wr_aw = - dist_wr_aw;
+          if (dist_wr_aw > 180) dist_wr_aw = 360 - dist_wr_aw;
+          if (dist_wr_aw <= temp_r->degree_range + cr->range.degree_range){ 
+            overlapping = TRUE;
+            break;
+          }
+        }
+        if (overlapping == FALSE){  
+          r_process = pid_task( find_vpid(a->pid), PIDTYPE_PID);
+          if (r_process == NULL) return -EFAULT;
+          wake_up_process( r_process );
+          reader_count ++;
+        }
       }
     }
     spin_unlock(&one_lock);
@@ -122,12 +143,16 @@ int set_rotation(struct dev_rotation *rot)
       if (distance < 0) distance = - distance;
       if (distance > 180) distance = 360 - distance;
       if (distance <= temp_r->degree_range && a->rw == WRITER) {
-        wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID)  );
+          r_process = pid_task( find_vpid(a->pid), PIDTYPE_PID);
+          if (r_process == NULL) return -EFAULT;
+          wake_up_process( r_process );
         spin_unlock(&one_lock);
         return 1;
       }
       else if (distance <= temp_r->degree_range && a->rw == READER) {
-        wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID)  );
+          r_process = pid_task( find_vpid(a->pid), PIDTYPE_PID);
+          if (r_process == NULL) return -EFAULT;
+          wake_up_process( r_process );
         reader_count ++;
       }
     }
@@ -139,10 +164,6 @@ int set_rotation(struct dev_rotation *rot)
 int rotlock_read(struct rotation_range *rot)
 {
   struct rotation_range temp;
-  copy_from_user(&temp, rot, sizeof(struct rotation_range));
-  if (temp.rot.degree < 0 || temp.rot.degree >= 360) return -EINVAL;
-  if (temp.degree_range >= 180) return -EINVAL;
-
   int distance;
   struct list_head *a;
   struct list_head *n;
@@ -150,8 +171,13 @@ int rotlock_read(struct rotation_range *rot)
   int found = FALSE;
   int distance_2;
   int distance_curr;
+  struct lock_list *d;
 
-  struct lock_list *d = kmalloc(sizeof(struct lock_list), GFP_KERNEL);
+  if( copy_from_user(&temp, rot, sizeof(struct rotation_range)) != 0) return -EINVAL;
+  if (temp.rot.degree < 0 || temp.rot.degree >= 360) return -EINVAL;
+  if (temp.degree_range >= 180) return -EINVAL;
+
+  d = kmalloc(sizeof(struct lock_list), GFP_KERNEL);
   if (d == NULL) return -ENOMEM;
   d->range = temp;
   d->pid = current->pid;
@@ -196,7 +222,7 @@ int rotlock_read(struct rotation_range *rot)
       }
     }
 
-		distance_curr = temp.rot.degree - curr_rot.degree;
+    distance_curr = temp.rot.degree - curr_rot.degree;
     if (distance_curr < 0) distance_curr = - distance_curr;
     if (distance_curr > 180) distance_curr = 360 - distance_curr;
 
@@ -219,18 +245,19 @@ int rotlock_read(struct rotation_range *rot)
 int rotlock_write(struct rotation_range *rot)
 {
   struct rotation_range temp;
-  copy_from_user(&temp, rot, sizeof(struct rotation_range));
-  if (temp.rot.degree < 0 || temp.rot.degree >= 360) return -EINVAL;
-  if (temp.degree_range >= 180) return -EINVAL;
-
   int distance;
   struct list_head *a;
   struct list_head *n;
   struct lock_list *p;
   int found = FALSE;
   int distance_curr;
+  struct lock_list *d;
 
-  struct lock_list *d = kmalloc(sizeof(struct lock_list), GFP_KERNEL);
+  if (copy_from_user(&temp, rot, sizeof(struct rotation_range)) != 0) return -EINVAL;
+  if (temp.rot.degree < 0 || temp.rot.degree >= 360) return -EINVAL;
+  if (temp.degree_range >= 180) return -EINVAL;
+
+  d = kmalloc(sizeof(struct lock_list), GFP_KERNEL);
   if (d == NULL) return -ENOMEM;
   d->range = temp;
   d->pid = current->pid;
@@ -285,14 +312,15 @@ int rotunlock_read(struct rotation_range *rot)
   struct list_head *n;
   int found = FALSE;
   struct rotation_range temp;
-  copy_from_user(&temp, rot, sizeof(struct rotation_range));
+  struct task_struct *r_process;
+  int distance;
+  int distance_curr;
+  
+  if (copy_from_user(&temp, rot, sizeof(struct rotation_range)) != 0) return -EINVAL;
   if (temp.rot.degree < 0 || temp.rot.degree >= 360) return -EINVAL;
   if (temp.degree_range >= 180) return -EINVAL;
 
   spin_lock(&one_lock);
-
-  int distance;
-	int distance_curr;
 
   list_for_each_safe(p, n, &lock_acquired) {
     a = list_entry(p, struct lock_list, lst);
@@ -304,7 +332,7 @@ int rotunlock_read(struct rotation_range *rot)
       break;
     }
   }
-  if (found == FALSE) /*error*/;
+  if (found == FALSE) return -EINVAL;
 
   list_for_each_safe(p, n, &lock_waiting) {
     a = list_entry(p, struct lock_list, lst);
@@ -319,7 +347,9 @@ int rotunlock_read(struct rotation_range *rot)
 
     if (distance <= a->range.degree_range + temp.degree_range && distance_curr <= temp.degree_range){
       if (a->rw == WRITER) {
-        wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID) );
+          r_process = pid_task( find_vpid(a->pid), PIDTYPE_PID);
+          if (r_process == NULL) return -EFAULT;
+          wake_up_process( r_process );
         break;
       }
     }
@@ -338,28 +368,28 @@ int rotunlock_write(struct rotation_range *rot)
   struct list_head *n;
   int found = FALSE;
   struct rotation_range temp;
-  copy_from_user(&temp, rot, sizeof(struct rotation_range));
+  struct task_struct *r_process;
+  int distance;
+  int distance_curr;
+
+  if (copy_from_user(&temp, rot, sizeof(struct rotation_range)) != 0) return -EINVAL;
   if (temp.rot.degree < 0 || temp.rot.degree >= 360) return -EINVAL;
   if (temp.degree_range >= 180) return -EINVAL;
 
   spin_lock(&one_lock);
 
-  /* waking up */
-  int distance;
-  int distance_curr;
-
-	list_for_each_safe(p, n, &lock_acquired){
+  list_for_each_safe(p, n, &lock_acquired){
     a = list_entry(p, struct lock_list, lst);
-		if(a->pid == current->pid && a->rw == WRITER &&
-				temp.degree_range == a->range.degree_range && temp.rot.degree == a->range.rot.degree) { 
-			found = TRUE;
-			list_del(p);
-			kfree(a);
-			break;
-		}
-	}
+    if(a->pid == current->pid && a->rw == WRITER &&
+        temp.degree_range == a->range.degree_range && temp.rot.degree == a->range.rot.degree) { 
+      found = TRUE;
+      list_del(p);
+      kfree(a);
+      break;
+    }
+  }
  
-  if(found == FALSE) /*error*/;
+  if(found == FALSE) return -EINVAL;
 
   list_for_each_safe(p, n, &lock_waiting) {
     a = list_entry(p, struct lock_list, lst);
@@ -368,12 +398,14 @@ int rotunlock_write(struct rotation_range *rot)
     if (distance < 0) distance = -distance;
     if (distance > 180) distance = 360 - distance;
 
-		distance_curr = temp.rot.degree - curr_rot.degree;
+    distance_curr = temp.rot.degree - curr_rot.degree;
     if (distance_curr < 0) distance_curr = - distance_curr;
     if (distance_curr > 180) distance_curr = 360 - distance_curr;
 
     if (distance <= a->range.degree_range + temp.degree_range && distance_curr <= temp.degree_range){
-        wake_up_process( pid_task( find_vpid(a->pid), PIDTYPE_PID) );
+          r_process = pid_task( find_vpid(a->pid), PIDTYPE_PID);
+          if (r_process == NULL) return -EFAULT;
+          wake_up_process( r_process );
     }
   }
   
