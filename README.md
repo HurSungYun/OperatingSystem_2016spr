@@ -47,12 +47,12 @@ We set our policy and it is stated below.
 * **Currently a writer grabbing the lock and release**
     + only readers waiting -> wait until the writer unlocks and get the lock
     + only writers waiting -> wait until the writer unlocks and one of them gets the lock
-    + readers & writers waiting -> writer gets the lock (our team's own policy)
+    + readers & writers waiting -> wait until the writer unlocks and one of the writers gets the lock (our team's own policy)
 
 * **Currently no one grabbing the lock**
     + only readers waiting-> go get the lock
     + only writers waiting -> one of them gets the lock
-    + readers & writers waiting -> writer gets the lock (our team's own policy)
+    + readers & writers waiting -> one of the writers gets the lock (our team's own policy)
 
  
  # 3. High level Design
@@ -60,19 +60,19 @@ We set our policy and it is stated below.
 We have set 5 system calls and it interacts each other. The statement below is how they work.
 
  * set_rotation()
-    + set\_rotation() is system call function we set. It changes current device rotation. Also, it wakes up all the appropriate tasks considering all cases and return how many tasks get the lock. 
+    + set\_rotation() is system call function we set. It changes current device rotation. Also, it wakes up all the appropriate tasks considering all cases and return the number of tasks which get the lock. 
 
  * rotlock_read()
-    + when rotlock\_read() is called, it checks whether there is a lock-acquired writer which is overlapped with target. If so, make current task sleep. If not, checks whether there is a starved writer lock, and gives a lock if there is no starved writer lock. Otherwise, sleep tasks as well.
+    + when rotlock\_read() is called, it checks whether there is a lock-acquired writer which is overlapped with target. If so, make current task sleep. If not, checks whether there is a starving writer lock and whether current degree is in range, and gives a lock if there is no starving writer lock. Otherwise, sleep the task as well.
 
  * rotlock_write()
-    + rotlock\_write() is more simple than rotlock\_read(). It checks whether there is a lock which is overlapped with target and gives a lock if there isn't any acquired lock overlapping with target. Otherwise sleep.
+    + rotlock\_write() is simpler than rotlock\_read(). It checks whether there is a lock which is overlapped with target and whether current degree is in range and gives a lock if there isn't any acquired lock overlapping with target. Otherwise sleep.
 
  * rotunlock_read()
-    + rotunlock\_read() is consist of two feature. First one is releasing the lock it had before. The second one is re-awaking tasks for liveness. We check whether there is starved writer on waiting list, and waking up if it exists.
+    + rotunlock\_read() consists of two features. The first one is releasing the lock it had before. The second one is re-awaking tasks for liveness. We check whether there is a starving writer on waiting list, and wake it up if there exists.
 
  * rotunlock_write()
-    + rotunlock\_write() is also consist of two feature. First one is same as rotlock\_read(). The second feature is a little bit different. It broadcasts all waiting tasks and there would be resulted correctly because of other functions. If there is waiting writer lock, it would grab a lock, and if there's no waiting writer lock, readers grab locks.
+    + rotunlock\_write() consists of two feature as well. The first one is same as rotlock\_read(). The second feature is a little bit different. It broadcasts all waiting tasks and there would be resulted correctly because of other functions. If there is a waiting writer lock, it would grab the lock, and if there's no waiting writer lock, readers grab locks.
 
  
  # 4. Implementation
@@ -93,10 +93,10 @@ struct lock_list{
 };
 ```
 
-and they are dynamically allocated. We iterates these lists when we need to manipulate it. 
+and they are dynamically allocated. We iterate these lists when we need to manipulate it. 
 
 
-Additionally, we check overlapping area using this method.
+Additionally, we check overlapping areas using this method.
 
 * (distance between the center of two range) <= (sum of range_degree of two)
 
@@ -107,4 +107,4 @@ Additionally, we check overlapping area using this method.
  
  * YEONWOOKIM (2014-17184): 
  
- * EUNHYANGKIM (2013-13494): 
+ * EUNHYANGKIM (2013-13494): I absolutely found that if we are stuck in one algorithm, it's way better to abort it without any hesitation. Also understood how the locks work.
