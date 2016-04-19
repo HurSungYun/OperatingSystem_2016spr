@@ -43,16 +43,19 @@ We set our policy and it is stated below.
     + only readers waiting -> go get the lock
     + only writers waiting-> wait until all the readers unlock and one of them gets the lock
     + readers & writers waiting -> wait until current readers unlock and one of the writers gets the lock (readers wait & starvation-free)
+    + Among the writers, it is the one that first started to wait that gets the lock next.
 
 * **Currently a writer grabbing the lock and release**
     + only readers waiting -> wait until the writer unlocks and get the lock
     + only writers waiting -> wait until the writer unlocks and one of them gets the lock
     + readers & writers waiting -> wait until the writer unlocks and one of the writers gets the lock (our team's own policy)
+    + In this case, the next writer that gets the lock is decided arbitrarily by scheduling.
 
 * **Currently no one grabbing the lock**
     + only readers waiting-> go get the lock
     + only writers waiting -> one of them gets the lock
     + readers & writers waiting -> one of the writers gets the lock (our team's own policy)
+    + In this case as well, first in first out regarding waiting writers is not necessarily preserved.
 
  
  # 3. High level Design
@@ -63,16 +66,16 @@ We have set 5 system calls and it interacts each other. The statement below is h
     + set\_rotation() is system call function we set. It changes current device rotation. Also, it wakes up all the appropriate tasks considering all cases and return the number of tasks which get the lock. 
 
  * rotlock_read()
-    + when rotlock\_read() is called, it checks whether there is a lock-acquired writer which is overlapped with target. If so, make current task sleep. If not, checks whether there is a starving writer lock and whether current degree is in range, and gives a lock if there is no starving writer lock. Otherwise, sleep the task as well.
+    + when rotlock\_read() is called, it checks whether there is a writer lock that overlaps with target range. If so, it makes current task sleep. If not, it checks whether there is a waiting writer lock and whether current degree is in the writer's range. Again, if there is, the current task goes to sleep. Otherwise, the task acquires a read lock.
 
  * rotlock_write()
-    + rotlock\_write() is simpler than rotlock\_read(). It checks whether there is a lock which is overlapped with target and whether current degree is in range and gives a lock if there isn't any acquired lock overlapping with target. Otherwise sleep.
+    + rotlock\_write() is simpler than rotlock\_read(). It checks whether there is a lock that overlaps with target range and whether current degree is in the range. It gives a lock if not.
 
  * rotunlock_read()
-    + rotunlock\_read() consists of two features. The first one is releasing the lock it had before. The second one is re-awaking tasks for liveness. We check whether there is a starving writer on waiting list, and wake it up if there exists.
+    + rotunlock\_read() has two features. The first one is releasing the lock it had before. The second one is awaking tasks that were waiting for the lock to be available. We check whether there is a starving writer on waiting list, and wake it up if there is.
 
  * rotunlock_write()
-    + rotunlock\_write() consists of two feature as well. The first one is same as rotlock\_read(). The second feature is a little bit different. It broadcasts all waiting tasks and there would be resulted correctly because of other functions. If there is a waiting writer lock, it would grab the lock, and if there's no waiting writer lock, readers grab locks.
+    + rotunlock\_write() also has two features. The first one is the same as rotlock\_read(). The second feature is a little bit different. It broadcasts to wake up all waiting tasks. This should work correctly because of other functions. If there are waiting writer locks, one of them would grab the lock, and if there's no waiting writer lock, readers would.
 
  
  # 4. Implementation
@@ -105,6 +108,6 @@ Additionally, we check overlapping areas using this method.
  
  * HURSUNGYUN (2014-19768): I absolutely found that writing concurrent program with correctness is one of the most difficult tasks in the world.
  
- * YEONWOOKIM (2014-17184): 
+ * YEONWOOKIM (2014-17184): It was a new experience to design a concurrently working program. It was surely difficult trying to think of all possible orders of locking and unlocking, but it was also fun and intriguing.
  
  * EUNHYANGKIM (2013-13494): I absolutely found that if we are stuck in one algorithm, it's way better to abort it without any hesitation. Also understood how the locks work.
