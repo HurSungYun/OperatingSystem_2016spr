@@ -282,10 +282,11 @@ int rotlock_read(struct rotation_range *rot)
 		if (found == FALSE && distance_curr <= temp.degree_range)
 			break;
 
-		spin_unlock(&one_lock);
 		set_current_state(TASK_INTERRUPTIBLE);
+		spin_unlock(&one_lock);
 		schedule();
 		spin_lock(&one_lock);
+      set_current_state(TASK_RUNNING);
 	}
 
 	list_del_init(&(d->lst));
@@ -351,10 +352,11 @@ int rotlock_write(struct rotation_range *rot)
 		if (found == FALSE && distance_curr <= temp.degree_range)
 			break;
 
-		spin_unlock(&one_lock);
 		set_current_state(TASK_INTERRUPTIBLE);
-		schedule();
+		spin_unlock(&one_lock);
+      schedule();
 		spin_lock(&one_lock);
+      set_current_state(TASK_RUNNING);
 	}
 
 	list_del_init(&(d->lst));
