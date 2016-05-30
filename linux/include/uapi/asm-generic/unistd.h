@@ -703,6 +703,9 @@ __SYSCALL(__NR_renameat2, sys_renameat2)
 #define __NR_seccomp 277
 __SYSCALL(__NR_seccomp, sys_seccomp)
 
+#define __NR_set_gps_location 384
+__SYSCALL(__NR_set_gps_location, set_gps_location)
+
 #undef __NR_syscalls
 #define __NR_syscalls 278
 
