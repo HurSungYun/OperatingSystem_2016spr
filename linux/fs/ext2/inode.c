@@ -32,6 +32,7 @@
 #include <linux/fiemap.h>
 #include <linux/namei.h>
 #include <linux/aio.h>
+#include <linux/spinlock.h>
 #include "ext2.h"
 #include "acl.h"
 #include "xip.h"
@@ -1570,4 +1571,27 @@ int ext2_setattr(struct dentry *dentry, struct iattr *iattr)
 	mark_inode_dirty(inode);
 
 	return error;
+}
+
+extern struct gps_location curr;
+extern spinlock_t loc_lock;
+int ext2_set_gps_location(struct inode *inode)
+{
+	spin_lock(&loc_lock);
+	inode->i_latitude = curr.latitude;
+	inode->i_longitude = curr.longitude;
+	inode->i_accuracy = curr.accuracy;
+	spin_unlock(&loc_lock);
+
+	return 0;
+}
+
+int ext2_get_gps_location(struct inode *inode, struct gps_location *loc)
+{
+	if (loc == NULL) return -EINVAL;
+	loc->latitude = inode->i_latitude;
+	loc->longitude = inode->i_longitude;
+	loc->accuracy = inode->i_accuracy;
+
+	return 0;
 }

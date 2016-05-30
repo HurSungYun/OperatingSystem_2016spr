@@ -6,8 +6,10 @@
 #include <linux/gps.h>
 #include <linux/spinlock.h>
 
-extern struct gps_location curr;
+struct gps_location curr;
+EXPORT_SYMBOL(curr);
 DEFINE_SPINLOCK(loc_lock);
+EXPORT_SYMBOL(loc_lock);
 
 int set_gps_location(struct gps_location __user *loc)
 {
