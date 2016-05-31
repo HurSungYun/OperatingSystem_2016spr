@@ -394,6 +394,7 @@
 		CALL(sys_ni_syscall)		/* reserved sys_renameat2     */
 		CALL(sys_seccomp)
 		CALL(set_gps_location)
+/* 385 */ CALL(get_gps_location)
 
 #ifndef syscalls_counted
 .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls

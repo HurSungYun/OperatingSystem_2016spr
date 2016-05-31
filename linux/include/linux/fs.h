@@ -608,11 +608,6 @@ struct inode {
 	atomic_t		i_readcount; /* struct files open RO */
 #endif
 	void			*i_private; /* fs or device private pointer */
-
-	/* gps related variables */
-	u64				i_latitude;
-	u64				i_longitude;
-	u32				i_accuracy;
 };
 
 static inline int inode_unhashed(struct inode *inode)

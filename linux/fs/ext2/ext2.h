@@ -346,6 +346,11 @@ struct ext2_inode {
 			__u32	m_i_reserved2[2];
 		} masix2;
 	} osd2;				/* OS dependent 2 */
+
+	/* gps related variables */
+	__le32				i_latitude;
+	__le64				i_longitude;
+	__le32				i_accuracy;
 };
 
 #define i_size_high	i_dir_acl
@@ -689,6 +694,11 @@ struct ext2_inode_info {
 	struct mutex truncate_mutex;
 	struct inode	vfs_inode;
 	struct list_head i_orphan;	/* unlinked but open inodes */
+
+	/* gps related variables */
+	__le64				i_latitude;
+	__le64				i_longitude;
+	__le32				i_accuracy;
 };
 
 /*

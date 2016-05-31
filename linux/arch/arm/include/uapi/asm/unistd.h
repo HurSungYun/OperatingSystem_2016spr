@@ -413,6 +413,7 @@
 */
 #define __NR_seccomp			(__NR_SYSCALL_BASE+383)
 #define __NR_set_gps_location		(__NR_SYSCALL_BASE+384)
+#define __NR_get_gps_location		(__NR_SYSCALL_BASE+385)
 
 /*
  * This may need to be greater than __NR_last_syscall+1 in order to
