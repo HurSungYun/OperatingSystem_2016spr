@@ -32,6 +32,7 @@
 #include <linux/fiemap.h>
 #include <linux/namei.h>
 #include <linux/aio.h>
+#include <linux/spinlock.h>
 #include "ext2.h"
 #include "acl.h"
 #include "xip.h"
@@ -1570,4 +1571,35 @@ int ext2_setattr(struct dentry *dentry, struct iattr *iattr)
 	mark_inode_dirty(inode);
 
 	return error;
+}
+
+extern struct gps_location curr;
+extern spinlock_t loc_lock;
+int ext2_set_gps_location(struct inode *inode)
+{
+	struct buffer_head * bh;
+	spin_lock(&loc_lock);
+
+	struct ext2_inode *ext2_inode = ext2_get_inode(inode->i_sb, inode->i_ino, &bh);
+	ext2_inode->i_latitude = cpu_to_le64(curr.latitude);
+	ext2_inode->i_longitude = cpu_to_le64(curr.longitude);
+	ext2_inode->i_accuracy = cpu_to_le32(curr.accuracy);
+	spin_unlock(&loc_lock);
+
+	return 0;
+}
+
+int ext2_get_gps_location(struct inode *inode, struct gps_location *loc)
+{
+	struct buffer_head * bh;
+	if (loc == NULL) return -EINVAL;
+
+	struct ext2_inode *ext2_inode = ext2_get_inode(inode->i_sb, inode->i_ino, &bh);
+	spin_lock(&loc_lock);
+	loc->latitude = le64_to_cpu(ext2_inode->i_latitude);
+	loc->longitude = le64_to_cpu(ext2_inode->i_longitude);
+	loc->accuracy = le32_to_cpu(ext2_inode->i_accuracy);
+	spin_unlock(&loc_lock);
+
+	return 0;
 }
