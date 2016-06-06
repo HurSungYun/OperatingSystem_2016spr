@@ -3,9 +3,13 @@ GCCROOT=/home/ywkim/OS/opt/tizen-toolchain-4.9~git-i686_armv7l-tizen-linux-gnuea
 CFLAGS=$(INCLUDE)
 CC=$(GCCROOT)/armv7l-tizen-linux-gnueabi-gcc
 
-all: gpsupdate
+all: gpsupdate file_loc
 
 gpsupdate: gpsupdate.c
+	@echo [Arm-cc] $<...
+	@$(CC) $(CFLAGS) $< -o $@
+
+file_loc: file_loc.c
 	@echo [Arm-cc] $<...
 	@$(CC) $(CFLAGS) $< -o $@
 
