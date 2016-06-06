@@ -348,7 +348,7 @@ struct ext2_inode {
 	} osd2;				/* OS dependent 2 */
 
 	/* gps related variables */
-	__le32				i_latitude;
+	__le64				i_latitude;
 	__le64				i_longitude;
 	__le32				i_accuracy;
 };

@@ -24,6 +24,7 @@ int set_gps_location(struct gps_location __user *loc)
 
 int get_gps_location(const char __user *pathname, struct gps_location __user *loc)
 {
+	/* TODO: return -ENODEV if no GPS coordinates are embedded in the file */
 	struct inode *inode;
 	struct path path;
 	struct gps_location *kern_loc = kmalloc(sizeof(struct gps_location), GFP_KERNEL);
