@@ -341,7 +341,7 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
 			goto out_dir;
 		ext2_set_link(new_dir, new_de, new_page, old_inode, 1);
 		/* update gps location when a directory is renamed */
-		new_inode->i_op->set_gps_location(inode);
+		new_inode->i_op->set_gps_location(new_inode);
 		new_inode->i_ctime = CURRENT_TIME_SEC;
 		if (dir_de)
 			drop_nlink(new_inode);
@@ -360,7 +360,7 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
 	 */
 	old_inode->i_ctime = CURRENT_TIME_SEC;
 	/* update gps location when a directory is renamed */
-	old_inode->i_op->set_gps_location(inode);
+	old_inode->i_op->set_gps_location(old_inode);
 	mark_inode_dirty(old_inode);
 
 	ext2_delete_entry (old_de, old_page);
@@ -409,6 +409,7 @@ const struct inode_operations ext2_dir_inode_operations = {
 	.get_acl	= ext2_get_acl,
 	.set_gps_location = ext2_set_gps_location,
 	.get_gps_location = ext2_get_gps_location,
+	.permission = ext2_permission,
 };
 
 const struct inode_operations ext2_special_inode_operations = {
@@ -422,4 +423,5 @@ const struct inode_operations ext2_special_inode_operations = {
 	.get_acl	= ext2_get_acl,
 	.set_gps_location = ext2_set_gps_location,
 	.get_gps_location = ext2_get_gps_location,
+	.permission = ext2_permission,
 };
