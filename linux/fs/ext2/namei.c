@@ -105,6 +105,8 @@ static int ext2_create (struct inode * dir, struct dentry * dentry, umode_t mode
 		return PTR_ERR(inode);
 
 	inode->i_op = &ext2_file_inode_operations;
+	/* set gps when a new file is created */
+	inode->i_op->set_gps_location(inode);
 	if (ext2_use_xip(inode->i_sb)) {
 		inode->i_mapping->a_ops = &ext2_aops_xip;
 		inode->i_fop = &ext2_xip_file_operations;
@@ -135,6 +137,7 @@ static int ext2_mknod (struct inode * dir, struct dentry *dentry, umode_t mode, 
 		init_special_inode(inode, inode->i_mode, rdev);
 #ifdef CONFIG_EXT2_FS_XATTR
 		inode->i_op = &ext2_special_inode_operations;
+		inode->i_op->set_gps_location(inode);
 #endif
 		mark_inode_dirty(inode);
 		err = ext2_add_nondir(dentry, inode);
@@ -226,6 +229,8 @@ static int ext2_mkdir(struct inode * dir, struct dentry * dentry, umode_t mode)
 		goto out_dir;
 
 	inode->i_op = &ext2_dir_inode_operations;
+	/* set gps location when a new directory is created */
+	inode->i_op->set_gps_location(inode);
 	inode->i_fop = &ext2_dir_operations;
 	if (test_opt(inode->i_sb, NOBH))
 		inode->i_mapping->a_ops = &ext2_nobh_aops;
@@ -335,6 +340,8 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
 		if (!new_de)
 			goto out_dir;
 		ext2_set_link(new_dir, new_de, new_page, old_inode, 1);
+		/* update gps location when a directory is renamed */
+		new_inode->i_op->set_gps_location(new_inode);
 		new_inode->i_ctime = CURRENT_TIME_SEC;
 		if (dir_de)
 			drop_nlink(new_inode);
@@ -352,6 +359,8 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
  	 * rename.
 	 */
 	old_inode->i_ctime = CURRENT_TIME_SEC;
+	/* update gps location when a directory is renamed */
+	old_inode->i_op->set_gps_location(old_inode);
 	mark_inode_dirty(old_inode);
 
 	ext2_delete_entry (old_de, old_page);

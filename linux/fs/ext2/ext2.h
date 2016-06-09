@@ -348,7 +348,7 @@ struct ext2_inode {
 	} osd2;				/* OS dependent 2 */
 
 	/* gps related variables */
-	__le32				i_latitude;
+	__le64				i_latitude;
 	__le64				i_longitude;
 	__le32				i_accuracy;
 };
@@ -696,9 +696,9 @@ struct ext2_inode_info {
 	struct list_head i_orphan;	/* unlinked but open inodes */
 
 	/* gps related variables */
-	__le64				i_latitude;
-	__le64				i_longitude;
-	__le32				i_accuracy;
+	__u64				i_latitude;
+	__u64				i_longitude;
+	__u32				i_accuracy;
 };
 
 /*
@@ -765,6 +765,7 @@ extern int ext2_get_block(struct inode *, sector_t, struct buffer_head *, int);
 extern int ext2_setattr (struct dentry *, struct iattr *);
 extern int ext2_set_gps_location (struct inode *);
 extern int ext2_get_gps_location (struct inode *, struct gps_location *);
+extern int ext2_permission (struct inode *, int mask);
 extern void ext2_set_inode_flags(struct inode *inode);
 extern void ext2_get_inode_flags(struct ext2_inode_info *);
 extern int ext2_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,

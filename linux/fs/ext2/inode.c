@@ -1366,6 +1366,12 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
 	ei->i_frag_size = raw_inode->i_fsize;
 	ei->i_file_acl = le32_to_cpu(raw_inode->i_file_acl);
 	ei->i_dir_acl = 0;
+
+	/* get gps information from disk to memory inode */
+	ei->i_latitude = le64_to_cpu(raw_inode->i_latitude);
+	ei->i_longitude = le64_to_cpu(raw_inode->i_longitude);
+	ei->i_accuracy = le32_to_cpu(raw_inode->i_accuracy);
+
 	if (S_ISREG(inode->i_mode))
 		inode->i_size |= ((__u64)le32_to_cpu(raw_inode->i_size_high)) << 32;
 	else
@@ -1488,6 +1494,12 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
 	raw_inode->i_frag = ei->i_frag_no;
 	raw_inode->i_fsize = ei->i_frag_size;
 	raw_inode->i_file_acl = cpu_to_le32(ei->i_file_acl);
+	 
+	/* write gps location in memory to disk inode */
+	raw_inode->i_latitude = cpu_to_le64(ei->i_latitude);
+	raw_inode->i_latitude = cpu_to_le64(ei->i_longitude);
+	raw_inode->i_latitude = cpu_to_le32(ei->i_accuracy);
+
 	if (!S_ISREG(inode->i_mode))
 		raw_inode->i_dir_acl = cpu_to_le32(ei->i_dir_acl);
 	else {
@@ -1577,13 +1589,15 @@ extern struct gps_location curr;
 extern spinlock_t loc_lock;
 int ext2_set_gps_location(struct inode *inode)
 {
-	struct buffer_head * bh;
+	struct ext2_inode_info *ext2_inode;
+	ext2_inode = EXT2_I(inode);
+
 	spin_lock(&loc_lock);
 
-	struct ext2_inode *ext2_inode = ext2_get_inode(inode->i_sb, inode->i_ino, &bh);
-	ext2_inode->i_latitude = cpu_to_le64(curr.latitude);
-	ext2_inode->i_longitude = cpu_to_le64(curr.longitude);
-	ext2_inode->i_accuracy = cpu_to_le32(curr.accuracy);
+	memcpy(&ext2_inode->i_latitude, &curr.latitude, sizeof(double));
+	memcpy(&ext2_inode->i_longitude, &curr.longitude, sizeof(double));
+	memcpy(&ext2_inode->i_accuracy, &curr.accuracy, sizeof(float));
+
 	spin_unlock(&loc_lock);
 
 	return 0;
@@ -1591,15 +1605,41 @@ int ext2_set_gps_location(struct inode *inode)
 
 int ext2_get_gps_location(struct inode *inode, struct gps_location *loc)
 {
-	struct buffer_head * bh;
 	if (loc == NULL) return -EINVAL;
 
-	struct ext2_inode *ext2_inode = ext2_get_inode(inode->i_sb, inode->i_ino, &bh);
+	struct ext2_inode_info *ext2_inode;
+	ext2_inode = EXT2_I(inode);
+
 	spin_lock(&loc_lock);
-	loc->latitude = le64_to_cpu(ext2_inode->i_latitude);
-	loc->longitude = le64_to_cpu(ext2_inode->i_longitude);
-	loc->accuracy = le32_to_cpu(ext2_inode->i_accuracy);
+
+	memcpy(&loc->latitude, &ext2_inode->i_latitude, sizeof(double));
+	memcpy(&loc->longitude, &ext2_inode->i_longitude, sizeof(double));
+	memcpy(&loc->accuracy, &ext2_inode->i_accuracy, sizeof(float));
+
 	spin_unlock(&loc_lock);
 
 	return 0;
+}
+
+extern int generic_permission(struct inode *inode, int mask);
+int ext2_permission(struct inode *inode, int mask)
+{
+	int generic;
+	int loc_match;
+	struct ext2_inode_info *ext2_inode;
+	ext2_inode = EXT2_I(inode);
+	generic = generic_permission(inode, mask);
+
+	if (generic == 0)
+		return generic;
+
+	loc_match = 0;
+
+	spin_lock(&loc_lock);
+
+	/* TODO: floating point comparison; if location matches set loc_match, else clear loc_match */
+
+	spin_unlock(&loc_lock);
+	
+	return loc_match;
 }
