@@ -15,5 +15,7 @@ int main(int argc, char *argv[])
 	printf("latitude: %lf, longitude: %lf, accuracy: %f\n",
 			loc->latitude, loc->longitude, loc->accuracy);
 
+	printf("http://www.google.com/maps/place/%.5lf,%.5lf\n",loc->latitude, loc->longitude);
+
 	return 0;
 }
