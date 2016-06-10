@@ -17,7 +17,7 @@ int main()
 
 	/* Round-robin through the array to test the system call */
 	for (i = 0 ; ; i = (i + 1) % 100) {
-		printf("%d\n", syscall(SET_GPS_LOCATION, loc[i]));
+		printf("%d\n", syscall(SET_GPS_LOCATION, &loc[i]));
 		sleep(5);
 	}
 	return 0;
