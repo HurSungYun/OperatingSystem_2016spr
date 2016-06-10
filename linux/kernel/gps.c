@@ -16,8 +16,10 @@ EXPORT_SYMBOL(loc_lock);
 
 int set_gps_location(struct gps_location __user *loc)
 {
+	printk("set_gps_location started\n");
 	spin_lock(&loc_lock);
 	copy_from_user(&curr, loc, sizeof(struct gps_location));
+	printk("set_gps_location copy done\n");
 	spin_unlock(&loc_lock);
 	return 0;
 }

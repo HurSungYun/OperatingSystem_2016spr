@@ -1598,6 +1598,8 @@ int ext2_set_gps_location(struct inode *inode)
 	memcpy(&ext2_inode->i_longitude, &curr.longitude, sizeof(double));
 	memcpy(&ext2_inode->i_accuracy, &curr.accuracy, sizeof(float));
 
+	mark_inode_dirty(inode);
+	__ext2_write_inode(inode, inode_needs_sync(inode));
 	spin_unlock(&loc_lock);
 
 	return 0;
@@ -1621,6 +1623,24 @@ int ext2_get_gps_location(struct inode *inode, struct gps_location *loc)
 	return 0;
 }
 
+s32 float_to_int(u32 number, u32 shift){
+	u8 negative = ((number >> 31) & 0x1        );
+	u8 exponent = ((number >> 23) &  0xFF      );
+	u32 mantissa = ((number >>  0) &    0x7FFFFF) | 0x800000;
+	s32 ret = mantissa >> (22 - (exponent - 0x80) - shift);
+	if (negative) return -ret;
+	else return ret;
+}
+
+s64 double_to_int(u64 number, u32 shift){
+	u8 negative = ((number >> 63) & 0x1        );
+	u16 exponent = ((number >> 52) &  0x7FF      );
+	u64 mantissa = ((number >>  0) &    0xFFFFFFFFFFFFF) | 0x10000000000000;
+	s64 ret = mantissa >> (51 - (exponent - 0x400) - shift);
+	if (negative) return -ret;
+	else return ret;
+}
+
 extern int generic_permission(struct inode *inode, int mask);
 int ext2_permission(struct inode *inode, int mask)
 {
@@ -1630,16 +1650,62 @@ int ext2_permission(struct inode *inode, int mask)
 	ext2_inode = EXT2_I(inode);
 	generic = generic_permission(inode, mask);
 
-	if (generic == 0)
+	printk("ext2 permission\n");
+	if (generic != 0){
+		printk("ext2 generic != 0\n");
 		return generic;
+	}
 
 	loc_match = 0;
 
 	spin_lock(&loc_lock);
-
+	
 	/* TODO: floating point comparison; if location matches set loc_match, else clear loc_match */
+	s64 curr_latitude;
+	s64 curr_longitude;
+	s32 curr_accuracy;
+	s64 inode_latitude;
+	s64 inode_longitude;
+	s32 inode_accuracy;
+	s32 shifting_digit = 13;
+
+	printk("ext2 permission start\n");
+
+	memcpy(&curr_latitude, &curr.latitude, 8);
+	memcpy(&curr_longitude, &curr.longitude, 8);
+	memcpy(&curr_accuracy, &curr.accuracy, 4);
+	curr_latitude = double_to_int(curr_latitude, shifting_digit);
+	curr_longitude = double_to_int(curr_longitude, shifting_digit);
+	curr_accuracy = float_to_int(curr_accuracy, shifting_digit);
+	inode_latitude = double_to_int(ext2_inode->i_latitude, shifting_digit);
+	inode_longitude = double_to_int(ext2_inode->i_longitude, shifting_digit);
+	inode_accuracy = float_to_int(ext2_inode->i_accuracy, shifting_digit);
+
+	printk("ext2 permission end\n");
+
+//	#define EARTH_R 6371000;
+//	#define PI 3;
+	
+	s64 EARTH_R = 35394; // 6371000 / 180 
+	/* if we divide this 180 in the equation below, error accurs when 64 bit division done on 32-bit machine */
+	s64 PI = 3;
+
+	s64 long_d =  (curr_latitude - inode_latitude) * PI * EARTH_R; /* divided by 180 (included in EARTH_R)*/
+	s64 lati_d =  (curr_longitude - inode_longitude) * PI * EARTH_R; /* divided by 180 (included in EARTH_R)*/
+
+
+	printk("lat: %lld long: %lld acc: %ld\n",curr_latitude, curr_longitude, curr_accuracy);
+	printk("lat: %lld long: %lld acc: %ld\n",inode_latitude, inode_longitude, inode_accuracy);
+
+	printk("%lld + %lld <= %ld * %ld = %ld\n",long_d*long_d, lati_d*lati_d, curr_accuracy+inode_accuracy, curr_accuracy+inode_accuracy, (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy));
+
+	if ((long_d*long_d + lati_d*lati_d) <= (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy)){
+		spin_unlock(&loc_lock);
+		return 0;
+	}
 
 	spin_unlock(&loc_lock);
 	
-	return loc_match;
+//	return loc_match;
+	return -EACCES;
 }
