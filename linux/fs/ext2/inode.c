@@ -1599,6 +1599,7 @@ int ext2_set_gps_location(struct inode *inode)
 	memcpy(&ext2_inode->i_accuracy, &curr.accuracy, sizeof(float));
 
 	mark_inode_dirty(inode);
+	__ext2_write_inode(inode, inode_needs_sync(inode));
 	spin_unlock(&loc_lock);
 
 	return 0;
@@ -1650,8 +1651,10 @@ int ext2_permission(struct inode *inode, int mask)
 	generic = generic_permission(inode, mask);
 
 	printk("ext2 permission\n");
-	if (generic == 0)
+	if (generic != 0){
+		printk("ext2 generic != 0\n");
 		return generic;
+	}
 
 	loc_match = 0;
 
@@ -1666,6 +1669,8 @@ int ext2_permission(struct inode *inode, int mask)
 	s32 inode_accuracy;
 	s32 shifting_digit = 13;
 
+	printk("ext2 permission start\n");
+
 	memcpy(&curr_latitude, &curr.latitude, 8);
 	memcpy(&curr_longitude, &curr.longitude, 8);
 	memcpy(&curr_accuracy, &curr.accuracy, 4);
@@ -1675,6 +1680,8 @@ int ext2_permission(struct inode *inode, int mask)
 	inode_latitude = double_to_int(ext2_inode->i_latitude, shifting_digit);
 	inode_longitude = double_to_int(ext2_inode->i_longitude, shifting_digit);
 	inode_accuracy = float_to_int(ext2_inode->i_accuracy, shifting_digit);
+
+	printk("ext2 permission end\n");
 
 //	#define EARTH_R 6371000;
 //	#define PI 3;
@@ -1690,11 +1697,15 @@ int ext2_permission(struct inode *inode, int mask)
 	printk("lat: %lld long: %lld acc: %ld\n",curr_latitude, curr_longitude, curr_accuracy);
 	printk("lat: %lld long: %lld acc: %ld\n",inode_latitude, inode_longitude, inode_accuracy);
 
+	printk("%lld + %lld <= %ld * %ld = %ld\n",long_d*long_d, lati_d*lati_d, curr_accuracy+inode_accuracy, curr_accuracy+inode_accuracy, (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy));
+
 	if ((long_d*long_d + lati_d*lati_d) <= (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy)){
-		loc_match = 1;
+		spin_unlock(&loc_lock);
+		return 0;
 	}
 
 	spin_unlock(&loc_lock);
 	
-	return loc_match;
+//	return loc_match;
+	return -EACCES;
 }
