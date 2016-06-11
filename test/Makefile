@@ -3,7 +3,7 @@ GCCROOT=/home/eunhyangkim/Documents/opt/tizen-toolchain-4.9~git-i686_armv7l-tize
 CFLAGS=$(INCLUDE)
 CC=$(GCCROOT)/armv7l-tizen-linux-gnueabi-gcc
 
-all: gpsupdate file_loc randomgps
+all: gpsupdate file_loc randomgps resetgps
 
 gpsupdate: gpsupdate.c
 	@echo [Arm-cc] $<...
@@ -14,6 +14,10 @@ file_loc: file_loc.c
 	@$(CC) $(CFLAGS) $< -o $@
 
 randomgps: randomgps.c
+	@echo [Arm-cc] $<...
+	@$(CC) $(CFLAGS) $< -o $@
+
+resetgps: resetgps.c
 	@echo [Arm-cc] $<...
 	@$(CC) $(CFLAGS) $< -o $@
 
