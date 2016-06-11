@@ -1497,8 +1497,8 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
 	 
 	/* write gps location in memory to disk inode */
 	raw_inode->i_latitude = cpu_to_le64(ei->i_latitude);
-	raw_inode->i_latitude = cpu_to_le64(ei->i_longitude);
-	raw_inode->i_latitude = cpu_to_le32(ei->i_accuracy);
+	raw_inode->i_longitude = cpu_to_le64(ei->i_longitude);
+	raw_inode->i_accuracy = cpu_to_le32(ei->i_accuracy);
 
 	if (!S_ISREG(inode->i_mode))
 		raw_inode->i_dir_acl = cpu_to_le32(ei->i_dir_acl);
