@@ -419,9 +419,9 @@ struct ext2_inode {
 		} hurd2;
 	} osd2;				/* OS dependent 2 */
 
-	__le64	i_latitude;
-	__le64	i_longitude;
-	__le32	i_accuracy;
+	__u64	i_latitude;
+	__u64	i_longitude;
+	__u32	i_accuracy;
 };
 
 /*
@@ -472,9 +472,9 @@ struct ext2_inode_large {
 	} osd2;				/* OS dependent 2 */
 
 	/* gps related variables */
-	__le64				i_latitude;
-	__le64				i_longitude;
-	__le32				i_accuracy;
+	__u64				i_latitude;
+	__u64				i_longitude;
+	__u32				i_accuracy;
 
 	__u16	i_extra_isize;
 	__u16	i_checksum_hi;	/* crc32c(uuid+inum+inode) */
