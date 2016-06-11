@@ -1598,9 +1598,13 @@ int ext2_set_gps_location(struct inode *inode)
 	memcpy(&ext2_inode->i_longitude, &curr.longitude, sizeof(double));
 	memcpy(&ext2_inode->i_accuracy, &curr.accuracy, sizeof(float));
 
-	mark_inode_dirty(inode);
-	__ext2_write_inode(inode, inode_needs_sync(inode));
 	spin_unlock(&loc_lock);
+
+	if (inode_needs_sync(inode)) {
+		sync_inode_metadata(inode, 1);
+	} else {
+		mark_inode_dirty(inode);
+	}
 
 	return 0;
 }
