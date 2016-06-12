@@ -1497,8 +1497,8 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
 	 
 	/* write gps location in memory to disk inode */
 	raw_inode->i_latitude = cpu_to_le64(ei->i_latitude);
-	raw_inode->i_latitude = cpu_to_le64(ei->i_longitude);
-	raw_inode->i_latitude = cpu_to_le32(ei->i_accuracy);
+	raw_inode->i_longitude = cpu_to_le64(ei->i_longitude);
+	raw_inode->i_accuracy = cpu_to_le32(ei->i_accuracy);
 
 	if (!S_ISREG(inode->i_mode))
 		raw_inode->i_dir_acl = cpu_to_le32(ei->i_dir_acl);
@@ -1627,6 +1627,10 @@ int ext2_get_gps_location(struct inode *inode, struct gps_location *loc)
 	return 0;
 }
 
+/* these two functions referenced from 
+	http://stackoverflow.com/questions/20318911/converting-float-to-an-int-float2int-using-only-bitwise-manipulation
+*/
+
 s32 float_to_int(u32 number, u32 shift){
 	u8 negative = ((number >> 31) & 0x1        );
 	u8 exponent = ((number >> 23) &  0xFF      );
@@ -1680,10 +1684,10 @@ int ext2_permission(struct inode *inode, int mask)
 	memcpy(&curr_accuracy, &curr.accuracy, 4);
 	curr_latitude = double_to_int(curr_latitude, shifting_digit);
 	curr_longitude = double_to_int(curr_longitude, shifting_digit);
-	curr_accuracy = float_to_int(curr_accuracy, shifting_digit);
+	curr_accuracy = float_to_int(curr_accuracy, 0);
 	inode_latitude = double_to_int(ext2_inode->i_latitude, shifting_digit);
 	inode_longitude = double_to_int(ext2_inode->i_longitude, shifting_digit);
-	inode_accuracy = float_to_int(ext2_inode->i_accuracy, shifting_digit);
+	inode_accuracy = float_to_int(ext2_inode->i_accuracy, 0);
 
 	printk("ext2 permission end\n");
 
@@ -1694,16 +1698,22 @@ int ext2_permission(struct inode *inode, int mask)
 	/* if we divide this 180 in the equation below, error accurs when 64 bit division done on 32-bit machine */
 	s64 PI = 3;
 
-	s64 long_d =  (curr_latitude - inode_latitude) * PI * EARTH_R; /* divided by 180 (included in EARTH_R)*/
-	s64 lati_d =  (curr_longitude - inode_longitude) * PI * EARTH_R; /* divided by 180 (included in EARTH_R)*/
+//	s64 long_d =  (curr_latitude - inode_latitude) * PI * EARTH_R; /* divided by 180 (included in EARTH_R)*/
+//	s64 lati_d =  (curr_longitude - inode_longitude) * PI * EARTH_R; /* divided by 180 (included in EARTH_R)*/
 
+	s64 long_d = curr_latitude - inode_latitude;
+	s64 lati_d = curr_longitude - inode_longitude;
+
+	if(long_d < 0) long_d = inode_latitude - curr_latitude;
+	if(lati_d < 0) lati_d = inode_longitude - curr_longitude;
 
 	printk("lat: %lld long: %lld acc: %ld\n",curr_latitude, curr_longitude, curr_accuracy);
 	printk("lat: %lld long: %lld acc: %ld\n",inode_latitude, inode_longitude, inode_accuracy);
 
-	printk("%lld + %lld <= %ld * %ld = %ld\n",long_d*long_d, lati_d*lati_d, curr_accuracy+inode_accuracy, curr_accuracy+inode_accuracy, (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy));
+	printk("%lld + %lld = %lld <= %ld\n",long_d, lati_d, long_d + lati_d, curr_accuracy+inode_accuracy );
 
-	if ((long_d*long_d + lati_d*lati_d) <= (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy)){
+	if ((long_d + lati_d) <= (curr_accuracy+inode_accuracy)){
+		printk("unlocked\n");
 		spin_unlock(&loc_lock);
 		return 0;
 	}
