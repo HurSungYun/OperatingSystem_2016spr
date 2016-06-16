@@ -49,7 +49,7 @@ project 4: Geo-tagged file system (ext2)
 
 * Two function named double\_to\_int and float\_to\_int is used for converting double or float to int type. These function use bitwise operation to get the exponent and mantissa part referencing their structure, and calculated it with shifting 13 digits for saving numbers after decimal point. Therefore, We can successfully convert double/float type into int type.
 
-* Euclidean distance is used for comparing two ( integer-converted ) GPS locations. Because the range of GPS location is from -180 to 180, we do not have to consider overflow of s64. Therefore, we compare square of distance. 
+* Euclidean distance is used for comparing two ( integer-converted ) GPS locations. Because the range of GPS location is from -180 to 180, we do not have to consider overflow of s64. Therefore, it is okay to compare square of distance. 
 
 <!--- TODO: more permission explanation -->
 
