@@ -385,7 +385,6 @@ ssize_t do_sync_write(struct file *filp, const char __user *buf, size_t len, lof
 	struct iovec iov = { .iov_base = (void __user *)buf, .iov_len = len };
 	struct kiocb kiocb;
 	ssize_t ret;
-	struct inode *inode = file_inode(filp);
 
 	init_sync_kiocb(&kiocb, filp);
 	kiocb.ki_pos = *ppos;
@@ -396,8 +395,6 @@ ssize_t do_sync_write(struct file *filp, const char __user *buf, size_t len, lof
 	if (-EIOCBQUEUED == ret)
 		ret = wait_on_sync_kiocb(&kiocb);
 	*ppos = kiocb.ki_pos;
-	/*if (inode->i_op->set_gps_location)
-		inode->i_op->set_gps_location(inode);*/
 	return ret;
 }
 
