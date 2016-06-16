@@ -8,7 +8,7 @@
 #include <linux/namei.h>
 #include <linux/fs.h>
 
-struct gps_location curr = {322188696, 322188696, 322188696};
+struct gps_location curr;
 EXPORT_SYMBOL(curr);
 DEFINE_SPINLOCK(loc_lock);
 EXPORT_SYMBOL(loc_lock);
@@ -41,11 +41,6 @@ int get_gps_location(const char __user *pathname, struct gps_location __user *lo
 	if (inode->i_op->get_gps_location == NULL)
 		return -ENODEV;
 	inode->i_op->get_gps_location(inode, kern_loc);
-
-	/*
-	if (kern_loc->latitude == -200 && kern_loc->longitude == -200 && kern_loc->accuracy == -200)
-		return -ENODEV;
-	*/
 
 	if (copy_to_user(loc, kern_loc, sizeof(struct gps_location)))
 		return -EINVAL;
