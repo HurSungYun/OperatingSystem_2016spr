@@ -1664,11 +1664,8 @@ int ext2_permission(struct inode *inode, int mask)
 		return generic;
 	}
 
-	loc_match = 0;
-
 	spin_lock(&loc_lock);
 	
-	/* TODO: floating point comparison; if location matches set loc_match, else clear loc_match */
 	s64 curr_latitude;
 	s64 curr_longitude;
 	s32 curr_accuracy;
@@ -1691,10 +1688,7 @@ int ext2_permission(struct inode *inode, int mask)
 
 	printk("ext2 permission end\n");
 
-//	#define EARTH_R 6371000;
-//	#define PI 3;
-	
-	s64 EARTH_R = 35394; // 6371000 / 180 
+	s64 EARTH_R = 35394; /* 6371000 / 180 */
 	/* if we divide this 180 in the equation below, error accurs when 64 bit division done on 32-bit machine */
 	s64 PI = 3;
 
@@ -1712,14 +1706,22 @@ int ext2_permission(struct inode *inode, int mask)
 
 	printk("%lld + %lld = %lld <= %ld\n",long_d, lati_d, long_d + lati_d, curr_accuracy+inode_accuracy );
 
-	if ((long_d + lati_d) <= (curr_accuracy+inode_accuracy)){
-		printk("unlocked\n");
+	if (S_ISDIR(inode->i_mode)) {
+		if ((long_d*long_d + lati_d*lati_d) <= (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy) ||
+				mask == MAY_EXEC) {
+			spin_unlock(&loc_lock);
+			return 0;
+		}
+		spin_unlock(&loc_lock);
+		return -EACCES;
+	}
+
+	if ((long_d*long_d + lati_d*lati_d) <= (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy)){
 		spin_unlock(&loc_lock);
 		return 0;
 	}
 
 	spin_unlock(&loc_lock);
 	
-//	return loc_match;
 	return -EACCES;
 }
