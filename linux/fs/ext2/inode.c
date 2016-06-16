@@ -1693,6 +1693,16 @@ int ext2_permission(struct inode *inode, int mask)
 
 	printk("%lld + %lld <= %ld * %ld = %ld\n",long_d*long_d, lati_d*lati_d, curr_accuracy+inode_accuracy, curr_accuracy+inode_accuracy, (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy));
 
+	if (S_ISDIR(inode->i_mode)) {
+		if ((long_d*long_d + lati_d*lati_d) <= (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy) ||
+				mask == MAY_EXEC) {
+			spin_unlock(&loc_lock);
+			return 0;
+		}
+		spin_unlock(&loc_lock);
+		return -EACCES;
+	}
+
 	if ((long_d*long_d + lati_d*lati_d) <= (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy)){
 		spin_unlock(&loc_lock);
 		return 0;
