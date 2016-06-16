@@ -8,8 +8,7 @@
 #include <linux/namei.h>
 #include <linux/fs.h>
 
-
-struct gps_location curr;
+struct gps_location curr = {322188696, 322188696, 322188696};
 EXPORT_SYMBOL(curr);
 DEFINE_SPINLOCK(loc_lock);
 EXPORT_SYMBOL(loc_lock);
@@ -18,7 +17,8 @@ int set_gps_location(struct gps_location __user *loc)
 {
 	printk("set_gps_location started\n");
 	spin_lock(&loc_lock);
-	copy_from_user(&curr, loc, sizeof(struct gps_location));
+	if (copy_from_user(&curr, loc, sizeof(struct gps_location)))
+		return -EINVAL;
 	printk("set_gps_location copy done\n");
 	spin_unlock(&loc_lock);
 	return 0;
@@ -26,17 +26,29 @@ int set_gps_location(struct gps_location __user *loc)
 
 int get_gps_location(const char __user *pathname, struct gps_location __user *loc)
 {
-	/* TODO: return -ENODEV if no GPS coordinates are embedded in the file */
 	struct inode *inode;
 	struct path path;
 	struct gps_location *kern_loc = kmalloc(sizeof(struct gps_location), GFP_KERNEL);
 	if (kern_loc == NULL) return -ENOMEM;
 
 	kern_path(pathname, LOOKUP_FOLLOW, &path);
+	if (path.dentry == NULL)
+		return -EINVAL;
 	inode = path.dentry->d_inode;
+	if (inode == NULL)
+		return -EINVAL;
+
+	if (inode->i_op->get_gps_location == NULL)
+		return -ENODEV;
 	inode->i_op->get_gps_location(inode, kern_loc);
 
-	copy_to_user(loc, kern_loc, sizeof(struct gps_location));
+	/*
+	if (kern_loc->latitude == -200 && kern_loc->longitude == -200 && kern_loc->accuracy == -200)
+		return -ENODEV;
+	*/
+
+	if (copy_to_user(loc, kern_loc, sizeof(struct gps_location)))
+		return -EINVAL;
 	kfree(kern_loc);
 	return 0;
 }
