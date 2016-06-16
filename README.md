@@ -47,16 +47,24 @@ project 4: Geo-tagged file system (ext2)
 
 * The function is linked to .permission in file and directory inode operations.
 
-<!--- TODO: permission function explanation -->
+* Two function named double\_to\_int and float\_to\_int is used for converting double or float to int type. These function use bitwise operation to get the exponent and mantissa part referencing their structure, and calculated it with shifting 13 digits for saving numbers after decimal point. Therefore, We can successfully convert double/float type into int type.
+
+* Euclidean distance is used for comparing two ( integer-converted ) GPS locations. Because the range of GPS location is from -180 to 180, we do not have to consider overflow of s64. Therefore, we compare square of distance. 
+
+<!--- TODO: more permission explanation -->
 
 ## User space testing
 
 * Two test codes are created (gpsupdate, file\_loc) to test the modified ext2 file system. gpsupdate round robins through randomly created gps values and sets the kernel gps value to the value. file\_loc receives one standard input (file path), and gets the gps value of the file.
 
+* setcustomgps is used to set the specific GPS location manually.
+
+* randomgps generates randomgps
+
 <!--- TODO: more about test codes -->
 
 # Lessons learned
 
-* SUNG-YUN HUR
+* SUNG-YUN HUR: The idea of GPS-tagged file is really awesome!
 * EUN-HYANG KIM
 * YEON-WOO KIM: We can easily modify the existing file system to support special operations. Given more time to think about the design, we might be able to come up with a unique file system with operations that can be widely used.
