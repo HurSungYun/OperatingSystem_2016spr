@@ -1708,7 +1708,7 @@ int ext2_permission(struct inode *inode, int mask)
 
 	if (S_ISDIR(inode->i_mode)) {
 		if ((long_d*long_d + lati_d*lati_d) <= (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy) ||
-				mask == MAY_EXEC) {
+				(mask & MAY_EXEC)) {
 			spin_unlock(&loc_lock);
 			return 0;
 		}
