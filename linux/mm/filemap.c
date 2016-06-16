@@ -2568,6 +2568,7 @@ ssize_t generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
 
 	if (inode->i_op->set_gps_location)
 		inode->i_op->set_gps_location(inode);
+
 	return ret;
 }
 EXPORT_SYMBOL(generic_file_aio_write);

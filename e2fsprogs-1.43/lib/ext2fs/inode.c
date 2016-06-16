@@ -994,9 +994,10 @@ errcode_t ext2fs_write_new_inode(ext2_filsys fs, ext2_ino_t ino,
 	inode->i_latitude = 0;
 	inode->i_longitude = 0;
 	inode->i_accuracy = 0;
-	large_inode->i_latitude = 0;
+/*	large_inode->i_latitude = 0;
 	large_inode->i_longitude = 0;
 	large_inode->i_accuracy = 0;
+*/
 
 	if (size == sizeof(struct ext2_inode))
 		return ext2fs_write_inode_full(fs, ino, inode,
