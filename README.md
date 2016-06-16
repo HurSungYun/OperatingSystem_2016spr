@@ -35,7 +35,7 @@ project 4: Geo-tagged file system (ext2)
 
 * set\_gps\_location inode operation is used to set the gps value of the file whenever necessary.
 
-* In fs/ext2/namei.c, set\_gps\_location operation is called in ext2\_create, ext2\_mkdir, ext2\_rename. Additionally, it is also called in ext2\_fsync to update the gps data whenever a file is modified.
+* In fs/ext2/namei.c, set\_gps\_location operation is called in ext2\_create, ext2\_mkdir, ext2\_rename. Additionally, it is also called in generic\_aio\_write in mm/filemap.c to update the gps data whenever a file is modified.
 
 ## Create a file system
 
