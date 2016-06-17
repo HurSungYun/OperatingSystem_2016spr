@@ -16,4 +16,5 @@ int main(){
 
 	printf("(%f, %f, %.2f) : %d\n", loc.latitude, loc.longitude, loc.accuracy, syscall(SET_GPS_LOCATION, &loc));
 
+	return 0;
 }

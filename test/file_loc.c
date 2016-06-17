@@ -10,7 +10,10 @@ int main(int argc, char *argv[])
 		return -1;
 
 	struct gps_location *loc = malloc(sizeof(struct gps_location));
-	syscall(GET_GPS_LOCATION, argv[1], loc);
+	if (syscall(GET_GPS_LOCATION, argv[1], loc) < 0) {
+		printf("no such file\n");
+		return -1;
+	}
 
 	printf("latitude: %lf, longitude: %lf, accuracy: %f\n",
 			loc->latitude, loc->longitude, loc->accuracy);
