@@ -1631,7 +1631,17 @@ int ext2_get_gps_location(struct inode *inode, struct gps_location *loc)
 	http://stackoverflow.com/questions/20318911/converting-float-to-an-int-float2int-using-only-bitwise-manipulation
 */
 
+int is_zero_32(u32 number)
+{
+	int i;
+	for(i = 0; i < 32; i++){
+		if( (number >> i) & 0x1 ) return 0;
+	}
+	return 1;
+}
+
 s32 float_to_int(u32 number, u32 shift){
+	if(is_zero_32(number) == 1) return 0;
 	u8 negative = ((number >> 31) & 0x1        );
 	u8 exponent = ((number >> 23) &  0xFF      );
 	u32 mantissa = ((number >>  0) &    0x7FFFFF) | 0x800000;
@@ -1640,7 +1650,18 @@ s32 float_to_int(u32 number, u32 shift){
 	else return ret;
 }
 
+int is_zero_64(u64 number)
+{
+	int i;
+  for(i = 0; i < 64; i++){
+    if( (number >> i) & 0x1 ) return 0;
+  }
+	printk("zero!\n");
+  return 1;
+}
+
 s64 double_to_int(u64 number, u32 shift){
+	if(is_zero_64(number) == 1) return 0;
 	u8 negative = ((number >> 63) & 0x1        );
 	u16 exponent = ((number >> 52) &  0x7FF      );
 	u64 mantissa = ((number >>  0) &    0xFFFFFFFFFFFFF) | 0x10000000000000;
@@ -1705,6 +1726,8 @@ int ext2_permission(struct inode *inode, int mask)
 	printk("lat: %lld long: %lld acc: %ld\n",inode_latitude, inode_longitude, inode_accuracy);
 
 	printk("%lld + %lld = %lld <= %ld\n",long_d, lati_d, long_d + lati_d, curr_accuracy+inode_accuracy );
+
+	printk("%lld + %lld <= %ld\n",long_d * long_d, lati_d * lati_d, (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy) );
 
 	printk("dir? %d open? %d permission %d %d %d\n", S_ISDIR(inode->i_mode),mask & MAY_OPEN, mask & MAY_EXEC, !(mask & MAY_WRITE), !(mask & MAY_READ));
 
