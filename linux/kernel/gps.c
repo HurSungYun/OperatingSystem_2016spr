@@ -38,9 +38,10 @@ int get_gps_location(const char __user *pathname, struct gps_location __user *lo
 	if (inode == NULL)
 		return -EINVAL;
 
-	if (inode->i_op->get_gps_location == NULL)
+	if (inode->i_op->get_gps_location == 0)
 		return -ENODEV;
-	inode->i_op->get_gps_location(inode, kern_loc);
+	if (inode->i_op->get_gps_location(inode, kern_loc) != 0)
+		return -EINVAL;
 
 	if (copy_to_user(loc, kern_loc, sizeof(struct gps_location)))
 		return -EINVAL;
