@@ -15,11 +15,9 @@ EXPORT_SYMBOL(loc_lock);
 
 int set_gps_location(struct gps_location __user *loc)
 {
-	printk("set_gps_location started\n");
 	spin_lock(&loc_lock);
 	if (copy_from_user(&curr, loc, sizeof(struct gps_location)))
 		return -EINVAL;
-	printk("set_gps_location copy done\n");
 	spin_unlock(&loc_lock);
 	return 0;
 }
@@ -29,7 +27,8 @@ int get_gps_location(const char __user *pathname, struct gps_location __user *lo
 	struct inode *inode;
 	struct path path;
 	struct gps_location *kern_loc = kmalloc(sizeof(struct gps_location), GFP_KERNEL);
-	if (kern_loc == NULL) return -ENOMEM;
+	if (kern_loc == NULL)
+		return -ENOMEM;
 
 	kern_path(pathname, LOOKUP_FOLLOW, &path);
 	if (path.dentry == NULL)
@@ -38,9 +37,10 @@ int get_gps_location(const char __user *pathname, struct gps_location __user *lo
 	if (inode == NULL)
 		return -EINVAL;
 
-	if (inode->i_op->get_gps_location == NULL)
+	if (inode->i_op->get_gps_location == 0)
 		return -ENODEV;
-	inode->i_op->get_gps_location(inode, kern_loc);
+	if (inode->i_op->get_gps_location(inode, kern_loc) != 0)
+		return -EINVAL;
 
 	if (copy_to_user(loc, kern_loc, sizeof(struct gps_location)))
 		return -EINVAL;

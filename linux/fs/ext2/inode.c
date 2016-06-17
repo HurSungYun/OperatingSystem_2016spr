@@ -67,7 +67,7 @@ static void ext2_write_failed(struct address_space *mapping, loff_t to)
 /*
  * Called at the last iput() if i_nlink is zero.
  */
-void ext2_evict_inode(struct inode * inode)
+void ext2_evict_inode(struct inode *inode)
 {
 	struct ext2_block_alloc_info *rsv;
 	int want_delete = 0;
@@ -175,7 +175,7 @@ static int ext2_block_to_path(struct inode *inode,
 	} else if (i_block < direct_blocks) {
 		offsets[n++] = i_block;
 		final = direct_blocks;
-	} else if ( (i_block -= direct_blocks) < indirect_blocks) {
+	} else if ((i_block -= direct_blocks) < indirect_blocks) {
 		offsets[n++] = EXT2_IND_BLOCK;
 		offsets[n++] = i_block;
 		final = ptrs;
@@ -357,7 +357,7 @@ static inline ext2_fsblk_t ext2_find_goal(struct inode *inode, long block,
  *	direct and indirect blocks.
  */
 static int
-ext2_blks_to_allocate(Indirect * branch, int k, unsigned long blks,
+ext2_blks_to_allocate(Indirect *branch, int k, unsigned long blks,
 		int blocks_to_boundary)
 {
 	unsigned long count = 0;
@@ -1521,7 +1521,7 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
 			}
 		}
 	}
-	
+
 	raw_inode->i_generation = cpu_to_le32(inode->i_generation);
 	if (S_ISCHR(inode->i_mode) || S_ISBLK(inode->i_mode)) {
 		if (old_valid_dev(inode->i_rdev)) {
@@ -1534,7 +1534,8 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
 				cpu_to_le32(new_encode_dev(inode->i_rdev));
 			raw_inode->i_block[2] = 0;
 		}
-	} else for (n = 0; n < EXT2_N_BLOCKS; n++)
+	} else
+		for (n = 0; n < EXT2_N_BLOCKS; n++)
 		raw_inode->i_block[n] = ei->i_data[n];
 	mark_buffer_dirty(bh);
 	if (do_sync) {
@@ -1611,9 +1612,10 @@ int ext2_set_gps_location(struct inode *inode)
 
 int ext2_get_gps_location(struct inode *inode, struct gps_location *loc)
 {
-	if (loc == NULL) return -EINVAL;
-
 	struct ext2_inode_info *ext2_inode;
+	if (loc == NULL)
+		return -EINVAL;
+
 	ext2_inode = EXT2_I(inode);
 
 	spin_lock(&loc_lock);
@@ -1627,66 +1629,69 @@ int ext2_get_gps_location(struct inode *inode, struct gps_location *loc)
 	return 0;
 }
 
-/* these two functions referenced from 
+/* these two functions referenced from
 	http://stackoverflow.com/questions/20318911/converting-float-to-an-int-float2int-using-only-bitwise-manipulation
 */
 
 int is_zero_32(u32 number)
 {
 	int i;
-	for(i = 0; i < 32; i++){
-		if( (number >> i) & 0x1 ) return 0;
+	for (i = 0; i < 32; i++) {
+		if ((number >> i) & 0x1)
+			return 0;
 	}
 	return 1;
 }
 
-s32 float_to_int(u32 number, u32 shift){
-	if(is_zero_32(number) == 1) return 0;
-	u8 negative = ((number >> 31) & 0x1        );
-	u8 exponent = ((number >> 23) &  0xFF      );
-	u32 mantissa = ((number >>  0) &    0x7FFFFF) | 0x800000;
-	s32 ret = mantissa >> (22 - (exponent - 0x80) - shift);
-	if (negative) return -ret;
-	else return ret;
+s32 float_to_int(u32 number, u32 shift)
+{
+	u8 negative;
+	u8 exponent;
+	u32 mantissa;
+	u32 ret;
+	if (is_zero_32(number) == 1)
+		return 0;
+	negative = ((number >> 31) & 0x1);
+	exponent = ((number >> 23) &  0xFF);
+	mantissa = ((number >>  0) &    0x7FFFFF) | 0x800000;
+	ret = mantissa >> (22 - (exponent - 0x80) - shift);
+	if (negative)
+		return -ret;
+	else
+		return ret;
 }
 
 int is_zero_64(u64 number)
 {
 	int i;
-  for(i = 0; i < 64; i++){
-    if( (number >> i) & 0x1 ) return 0;
+  for (i = 0; i < 64; i++) {
+    if ((number >> i) & 0x1)
+			return 0;
   }
-	printk("zero!\n");
   return 1;
 }
 
-s64 double_to_int(u64 number, u32 shift){
-	if(is_zero_64(number) == 1) return 0;
-	u8 negative = ((number >> 63) & 0x1        );
-	u16 exponent = ((number >> 52) &  0x7FF      );
-	u64 mantissa = ((number >>  0) &    0xFFFFFFFFFFFFF) | 0x10000000000000;
-	s64 ret = mantissa >> (51 - (exponent - 0x400) - shift);
-	if (negative) return -ret;
-	else return ret;
+s64 double_to_int(u64 number, u32 shift)
+{
+	u8 negative;
+	u16 exponent;
+	u64 mantissa;
+	u64 ret;
+	if (is_zero_64(number) == 1)
+		return 0;
+	negative = ((number >> 63) & 0x1);
+	exponent = ((number >> 52) &  0x7FF);
+	mantissa = ((number >>  0) &    0xFFFFFFFFFFFFF) | 0x10000000000000;
+	ret = mantissa >> (51 - (exponent - 0x400) - shift);
+	if (negative)
+		return -ret;
+	else
+		return ret;
 }
 
 extern int generic_permission(struct inode *inode, int mask);
 int ext2_permission(struct inode *inode, int mask)
 {
-	int generic;
-	int loc_match;
-	struct ext2_inode_info *ext2_inode;
-	ext2_inode = EXT2_I(inode);
-	generic = generic_permission(inode, mask);
-
-	printk("ext2 permission\n");
-	if (generic != 0){
-		printk("ext2 generic != 0\n");
-		return generic;
-	}
-
-	spin_lock(&loc_lock);
-	
 	s64 curr_latitude;
 	s64 curr_longitude;
 	s32 curr_accuracy;
@@ -1694,8 +1699,19 @@ int ext2_permission(struct inode *inode, int mask)
 	s64 inode_longitude;
 	s32 inode_accuracy;
 	s32 shifting_digit = 13;
+	s64 long_d;
+	s64 lati_d;
 
-	printk("ext2 permission start\n");
+	int generic;
+	struct ext2_inode_info *ext2_inode;
+	ext2_inode = EXT2_I(inode);
+	generic = generic_permission(inode, mask);
+
+	if (generic != 0) {
+		return generic;
+	}
+
+	spin_lock(&loc_lock);
 
 	memcpy(&curr_latitude, &curr.latitude, 8);
 	memcpy(&curr_longitude, &curr.longitude, 8);
@@ -1707,34 +1723,17 @@ int ext2_permission(struct inode *inode, int mask)
 	inode_longitude = double_to_int(ext2_inode->i_longitude, shifting_digit);
 	inode_accuracy = float_to_int(ext2_inode->i_accuracy, 0);
 
-	printk("ext2 permission end\n");
+	long_d = curr_latitude - inode_latitude;
+	lati_d = curr_longitude - inode_longitude;
 
-	s64 EARTH_R = 35394; /* 6371000 / 180 */
-	/* if we divide this 180 in the equation below, error accurs when 64 bit division done on 32-bit machine */
-	s64 PI = 3;
-
-//	s64 long_d =  (curr_latitude - inode_latitude) * PI * EARTH_R; /* divided by 180 (included in EARTH_R)*/
-//	s64 lati_d =  (curr_longitude - inode_longitude) * PI * EARTH_R; /* divided by 180 (included in EARTH_R)*/
-
-	s64 long_d = curr_latitude - inode_latitude;
-	s64 lati_d = curr_longitude - inode_longitude;
-
-	if(long_d < 0) long_d = inode_latitude - curr_latitude;
-	if(lati_d < 0) lati_d = inode_longitude - curr_longitude;
-
-	printk("lat: %lld long: %lld acc: %ld\n",curr_latitude, curr_longitude, curr_accuracy);
-	printk("lat: %lld long: %lld acc: %ld\n",inode_latitude, inode_longitude, inode_accuracy);
-
-	printk("%lld + %lld = %lld <= %ld\n",long_d, lati_d, long_d + lati_d, curr_accuracy+inode_accuracy );
-
-	printk("%lld + %lld <= %ld\n",long_d * long_d, lati_d * lati_d, (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy) );
-
-	printk("dir? %d open? %d permission %d %d %d\n", S_ISDIR(inode->i_mode),mask & MAY_OPEN, mask & MAY_EXEC, !(mask & MAY_WRITE), !(mask & MAY_READ));
+	if (long_d < 0)
+		long_d = inode_latitude - curr_latitude;
+	if (lati_d < 0)
+		lati_d = inode_longitude - curr_longitude;
 
 	if (S_ISDIR(inode->i_mode)) {
 		if ((long_d*long_d + lati_d*lati_d) <= (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy) ||
-			(	(mask & MAY_EXEC) && !(mask & MAY_WRITE) && !(mask & MAY_READ) ) ) {      /* It seems right but other things needed */
-			printk("entered\n");
+			((mask & MAY_EXEC) && !(mask & MAY_WRITE) && !(mask & MAY_READ))) {      /* It seems right but other things needed */
 			spin_unlock(&loc_lock);
 			return 0;
 		}
@@ -1742,12 +1741,13 @@ int ext2_permission(struct inode *inode, int mask)
 		return -EACCES;
 	}
 
-	if ((long_d*long_d + lati_d*lati_d) <= (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy)){
+	if ((long_d*long_d + lati_d*lati_d) <=
+			(curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy)) {
 		spin_unlock(&loc_lock);
 		return 0;
 	}
 
 	spin_unlock(&loc_lock);
-	
+
 	return -EACCES;
 }

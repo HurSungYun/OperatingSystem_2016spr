@@ -51,8 +51,6 @@ project 4: Geo-tagged file system (ext2)
 
 * Euclidean distance is used for comparing two ( integer-converted ) GPS locations. Because the range of GPS location is from -180 to 180, we do not have to consider overflow of s64. Therefore, it is okay to compare square of distance. 
 
-<!--- TODO: more permission explanation -->
-
 ## User space testing
 
 * Two test codes are created (gpsupdate, file\_loc) to test the modified ext2 file system. gpsupdate round robins through randomly created gps values and sets the kernel gps value to the value. file\_loc receives one standard input (file path), and gets the gps value of the file.
@@ -61,10 +59,12 @@ project 4: Geo-tagged file system (ext2)
 
 * randomgps generates randomgps
 
-<!--- TODO: more about test codes -->
+* opentest opens a file and modify the device gps to check if the gps changes when modification.
+
+* resetgps gets a file path as an input and change the device gps to the file's gps.
 
 # Lessons learned
 
 * SUNG-YUN HUR: The idea of GPS-tagged file is really awesome!
-* EUN-HYANG KIM
+* EUN-HYANG KIM: How file system is managed in software.
 * YEON-WOO KIM: We can easily modify the existing file system to support special operations. Given more time to think about the design, we might be able to come up with a unique file system with operations that can be widely used.
