@@ -1653,9 +1653,7 @@ s32 float_to_int(u32 number, u32 shift){
 int is_zero_64(u64 number)
 {
 	int i;
-	printk("is_zero\n");
   for(i = 0; i < 64; i++){
-		printk("%d %d\n",(number >> i) & 0x1, (number >> i) );
     if( (number >> i) & 0x1 ) return 0;
   }
 	printk("zero!\n");
