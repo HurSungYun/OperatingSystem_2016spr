@@ -1706,9 +1706,12 @@ int ext2_permission(struct inode *inode, int mask)
 
 	printk("%lld + %lld = %lld <= %ld\n",long_d, lati_d, long_d + lati_d, curr_accuracy+inode_accuracy );
 
+	printk("dir? %d open? %d permission %d %d %d\n", S_ISDIR(inode->i_mode),mask & MAY_OPEN, mask & MAY_EXEC, !(mask & MAY_WRITE), !(mask & MAY_READ));
+
 	if (S_ISDIR(inode->i_mode)) {
 		if ((long_d*long_d + lati_d*lati_d) <= (curr_accuracy+inode_accuracy)*(curr_accuracy+inode_accuracy) ||
-				(mask & MAY_EXEC)) {
+			(	(mask & MAY_EXEC) && !(mask & MAY_WRITE) && !(mask & MAY_READ) ) ) {      /* It seems right but other things needed */
+			printk("entered\n");
 			spin_unlock(&loc_lock);
 			return 0;
 		}
